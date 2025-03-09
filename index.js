@@ -228,7 +228,6 @@ exports.updateAppSheetEvent = onRequest(async (req, res) => {
     }
 });
 
-
 // ✅ CORS Handler
 exports.corsHandler = onRequest((req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
