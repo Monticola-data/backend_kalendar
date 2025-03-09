@@ -144,7 +144,6 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
     }
 });
 
-
 // ✅ Přidání nového záznamu do AppSheet
 exports.addToAppSheet = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
@@ -183,7 +182,6 @@ exports.addToAppSheet = onRequest(async (req, res) => {
         return res.status(500).json({ error: error.response?.data || error.message });
     }
 });
-
 
 // ✅ Aktualizace existujícího záznamu v AppSheet
 exports.updateAppSheetEvent = onRequest(async (req, res) => {
