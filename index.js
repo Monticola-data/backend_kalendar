@@ -144,6 +144,7 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
     }
 });
 
+
 // ✅ Přidání nového záznamu do AppSheet
 exports.addToAppSheet = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
