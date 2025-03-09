@@ -24,5 +24,8 @@ jobs:
       - name: Verify files
         run: ls -la  # Ověříme, zda jsou všechny potřebné soubory v repozitáři
 
+      - name: Install dependencies in backend-functions
+        run: cd backend-functions && npm install
+
       - name: Deploy to Firebase
         run: firebase deploy --project kalendar-831f8 --token "${{ secrets.FIREBASE_TOKEN }}"
