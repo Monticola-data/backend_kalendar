@@ -16,7 +16,6 @@ if (!APPSHEET_API_KEY || !APPSHEET_APP_ID) {
     process.exit(1);
 }
 
-
 // ✅ Webhook přijímá změny z AppSheet a ukládá je do globální proměnné
 const webhookApp = express();
 webhookApp.use(cors({ origin: true }));
@@ -57,8 +56,6 @@ exports.checkRefreshStatus = onRequest((req, res) => {
 
     return res.status(200).json({ type: "none", rowId: null });
 });
-
-
 
 // ✅ Funkce pro převod datumu
 function convertDateFormat(dateStr) {
@@ -244,5 +241,3 @@ exports.corsHandler = onRequest((req, res) => {
 
     res.status(400).send("Neplatná žádost");
 });
-
-
