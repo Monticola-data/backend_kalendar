@@ -1,4 +1,5 @@
-﻿const config = require("./config.json");
+
+const config = require("./config.json");
 const admin = require("firebase-admin");
 const axios = require("axios");
 
