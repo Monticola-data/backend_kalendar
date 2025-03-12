@@ -160,27 +160,42 @@ exports.addToAppSheet = functions.https.onRequest((req, res) => {
 });
 
 // ✅ Aktualizace existujícího záznamu v AppSheet
-exports.updateAppSheetEvent = functions.https.onRequest((req, res) => {
-    cors(req, res, async () => {
-        try {
-            const { rowId, Datum, Parta } = req.body;
-            if (!rowId) {
-                return res.status(400).json({ error: "❌ Chybí rowId" });
-            }
-            const requestData = {
-                Action: "Edit",
-                Rows: [{ "Row ID": rowId, Datum, Parta }]
-            };
-            const response = await axios.post(
-                `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Action`,
-                requestData,
-                { headers: { "ApplicationAccessKey": APPSHEET_API_KEY } }
-            );
-            return res.status(200).json({ message: "Záznam úspěšně aktualizován!", response: response.data });
-        } catch (error) {
-            return res.status(500).json({ error: error.response?.data || error.message });
+exports.updateAppSheetEvent = onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+    }
+
+    try {
+        const { rowId, Datum, Parta } = req.body;
+
+        if (!rowId) {
+            console.error("❌ Chybí rowId!", req.body);
+            return res.status(400).json({ error: "❌ Chybí rowId" });
         }
-    });
+
+        const requestData = {
+            Action: "Edit",
+            Rows: [{ "Row ID": rowId, Datum, Parta }]
+        };
+
+        console.log("📡 Odesílám data do AppSheet:", requestData);
+
+        const response = await axios.post(
+            `https://api.appsheet.com/api/v2/apps/${config.APPSHEET_APP_ID}/tables/Zadání/Action`,
+            requestData,
+            { headers: { "ApplicationAccessKey": config.APPSHEET_API_KEY } }
+        );
+
+        console.log("✅ Odpověď z AppSheet:", response.data);
+        return res.status(200).json({ message: "Záznam úspěšně aktualizován!", response: response.data });
+    } catch (error) {
+        console.error("❌ Chyba při volání AppSheet API:", error.response?.data || error.message);
+        return res.status(500).json({ error: error.response?.data || error.message });
+    }
 });
 
 
