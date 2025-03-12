@@ -26,10 +26,15 @@ webhookApp.use(express.json());
 
 webhookApp.post("/", async (req, res) => {
     try {
-        if (req.body.rowId) {
-            refreshStatus = { type: "update", rowId: req.body.rowId };
+        const rowId = req.body.Data?.["Row ID"]; // ✅ Tato část je klíčová!
+
+        if (rowId) {
+            refreshStatus = { type: "update", rowId };
             console.log("✅ Webhook nastavil refreshStatus:", refreshStatus);
+        } else {
+            console.warn("⚠️ Webhook neobsahuje rowId. Přijatá data:", req.body);
         }
+
         res.status(200).json({ message: "✅ Webhook přijal data úspěšně!" });
     } catch (error) {
         console.error("❌ Chyba webhook:", error.message);
