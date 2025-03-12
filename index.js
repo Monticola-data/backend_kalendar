@@ -40,14 +40,20 @@ exports.webhook = onRequest(webhookApp);
 
 // ✅ Kontrola změn
 exports.checkRefreshStatus = onRequest((req, res) => {
-    cors({ origin: true })(req, res, () => {
-        if (refreshStatus.type === "update") {
-            const response = { ...refreshStatus };
-            refreshStatus = { type: "none", rowId: null };
-            return res.status(200).json(response);
-        }
-        return res.status(200).json({ type: "none", rowId: null });
-    });
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+    }
+
+    if (refreshStatus.type === "update") {
+        const response = { ...refreshStatus };
+        refreshStatus = { type: "none", rowId: null };
+        return res.status(200).json(response);
+    }
+    return res.status(200).json({ type: "none", rowId: null });
 });
 
 
