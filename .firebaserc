@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "kalendar-831f8"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

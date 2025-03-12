@@ -1,4 +1,7 @@
-﻿const config = require("./config.json");
+const functions = require("firebase-functions");
+const cors = require("cors")({ origin: true });
+
+const config = require("./config.json");
 const admin = require("firebase-admin");
 const axios = require("axios");
 
@@ -42,19 +45,15 @@ exports.webhook = onRequest(webhookApp);
 // ✅ Funkce pro kontrolu změn (vrací status a resetuje ho)
 let refreshStatus = { type: "none", rowId: null }; // ✅ Paměťová proměnná pro sledování změn
 
-exports.checkRefreshStatus = onRequest((req, res) => {
-    res.set("Access-Control-Allow-Origin", "*");
-
-    console.log("🔍 Kontroluji refresh status:", refreshStatus);
-
-    if (refreshStatus.type === "update") {
-        console.log("✅ Aktualizace detekována, resetuji status...");
-        const response = { ...refreshStatus };
-        refreshStatus = { type: "none", rowId: null }; // ✅ Resetujeme po přečtení
-        return res.status(200).json(response);
-    }
-
-    return res.status(200).json({ type: "none", rowId: null });
+exports.checkRefreshStatus = functions.https.onRequest((req, res) => {
+    cors(req, res, () => {
+        if (refreshStatus.type === "update") {
+            const response = { ...refreshStatus };
+            refreshStatus = { type: "none", rowId: null };
+            return res.status(200).json(response);
+        }
+        return res.status(200).json({ type: "none", rowId: null });
+    });
 });
 
 // ✅ Funkce pro převod datumu
@@ -70,30 +69,23 @@ function convertDateFormat(dateStr) {
 }
 
 // ✅ Fetch AppSheet Data
-exports.fetchAppSheetData = onRequest(async (req, res) => {
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
+exports.fetchAppSheetData = functions.https.onRequest((req, res) => {
+    cors(req, res, async () => {
+        res.set("Access-Control-Allow-Origin", "*");
+        res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS") {
-        return res.status(204).send("");
-    }
+        if (req.method === "OPTIONS") {
+            return res.status(204).send("");
+        }
 
-    try {
-        console.log("🔍 Spouštím fetchAppSheetData...");
+        try {
+            const partyUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Uživatelé%20party/Find`;
+            const partyResponse = await axios.post(partyUrl, { "Select": ["Row ID", "Parta", "HEX"] }, {
+                headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
+            });
 
-        // 🟢 Fetchujeme uživatele party
-        const partyUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Uživatelé%20party/Find`;
-        console.log(`📡 Požadavek na party: ${partyUrl}`);
-
-        const partyResponse = await axios.post(partyUrl, { "Select": ["Row ID", "Parta", "HEX"] }, {
-            headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
-        });
-
-        console.log("✅ Odpověď z API (party):", JSON.stringify(partyResponse.data, null, 2));
-
-        const partyMap = {};
-        if (partyResponse.data && Array.isArray(partyResponse.data)) {
+            const partyMap = {};
             partyResponse.data.forEach(party => {
                 if (party["Row ID"]) {
                     partyMap[party["Row ID"]] = {
@@ -102,130 +94,93 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
                     };
                 }
             });
+
+            const zadaniUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Find`;
+            const zadaniResponse = await axios.post(zadaniUrl, { "Select": ["Row ID", "Obec", "Datum", "Parta", "Odeslané", "Hotové", "Předané", "Detail"] }, {
+                headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
+            });
+
+            const events = zadaniResponse.data.map(record => ({
+                id: record["Row ID"],
+                title: record.Obec || "Neznámá obec",
+                start: convertDateFormat(record.Datum),
+                color: (partyMap[record.Parta] || {}).color || "#145C7E",
+                party: record.Parta,
+                extendedProps: {
+                    odeslane: record.Odeslané === "Y",
+                    hotove: record.Hotové === "Y",
+                    predane: record.Předané === "Y",
+                    detail: record.Detail || ""
+                }
+            }));
+
+            return res.status(200).json({ events, partyMap });
+        } catch (error) {
+            return res.status(500).json({ error: error.response?.data || error.message });
         }
-
-        // 🟢 Fetchujeme data z tabulky "Zadání"
-        const zadaniUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Find`;
-        console.log(`📡 Požadavek na zadání: ${zadaniUrl}`);
-
-        const zadaniResponse = await axios.post(zadaniUrl, { "Select": ["Row ID", "Obec", "Datum", "Parta", "Odeslané", "Hotové", "Předané", "Detail"] }, {
-            headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
-        });
-
-        console.log("✅ Odpověď z API (zadání):", JSON.stringify(zadaniResponse.data, null, 2));
-
-        if (!zadaniResponse.data || !Array.isArray(zadaniResponse.data)) {
-            console.warn("⚠️ Žádné záznamy v Zadání!");
-            return res.status(200).json({ events: [], partyMap });
-        }
-
-        // 🟢 Mapujeme události
-        const events = zadaniResponse.data.map(record => ({
-            id: record["Row ID"],
-            title: record.Obec || "Neznámá obec",
-            start: convertDateFormat(record.Datum),
-            color: (partyMap[record.Parta] || {}).color || "#145C7E",
-            party: record.Parta,
-            extendedProps: {
-                odeslane: record.Odeslané === "Y",
-                hotove: record.Hotové === "Y",
-                predane: record.Předané === "Y",
-                detail: record.Detail || ""
-            }
-        }));
-
-        console.log("📌 Události do kalendáře:", JSON.stringify(events, null, 2));
-
-        return res.status(200).json({ events, partyMap });
-
-    } catch (error) {
-        console.error("❌ Chyba při načítání z AppSheet:", error.response?.data || error.message);
-        return res.status(500).json({ error: error.response?.data || error.message });
-    }
+    });
 });
 
-
 // ✅ Přidání nového záznamu do AppSheet
-exports.addToAppSheet = onRequest(async (req, res) => {
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "POST");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
+exports.addToAppSheet = functions.https.onRequest((req, res) => {
+    cors(req, res, async () => {
+        res.set("Access-Control-Allow-Origin", "*");
+        res.set("Access-Control-Allow-Methods", "POST");
+        res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method !== "POST") {
-        return res.status(405).send("Pouze POST metoda je povolena.");
-    }
+        if (req.method !== "POST") {
+            return res.status(405).send("Pouze POST metoda je povolena.");
+        }
 
-    try {
-        console.log("📨 Příchozí data:", req.body);
+        try {
+            const requestData = {
+                Action: "Add",
+                Properties: { Locale: "en-US" },
+                Rows: [{
+                    "Obec": req.body.Obec || "Neznámá obec",
+                    "Datum": req.body.Datum || new Date().toISOString(),
+                    "Parta": req.body.Parta || "Neznámá parta",
+                    "Činnost": Array.isArray(req.body.Činnost) ? req.body.Činnost : [req.body.Činnost],
+                    "Detail": req.body.Detail || ""
+                }]
+            };
 
-        const requestData = {
-            Action: "Add",
-            Properties: { Locale: "en-US" },
-            Rows: [{
-                "Obec": req.body.Obec || "Neznámá obec",
-                "Datum": req.body.Datum || new Date().toISOString(),
-                "Parta": req.body.Parta || "Neznámá parta",
-                "Činnost": Array.isArray(req.body.Činnost) ? req.body.Činnost : [req.body.Činnost],
-                "Detail": req.body.Detail || ""
-            }]
-        };
+            const response = await axios.post(
+                `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Action`,
+                requestData, { headers: { "ApplicationAccessKey": APPSHEET_API_KEY } }
+            );
 
-        const response = await axios.post(
-            `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Action`,
-            requestData, { headers: { "ApplicationAccessKey": APPSHEET_API_KEY } }
-        );
-
-        console.log("✅ Úspěšná odpověď z AppSheet:", response.data);
-        return res.status(200).json({ message: "Záznam úspěšně přidán do AppSheet!", response: response.data });
-
-    } catch (error) {
-        console.error("❌ Chyba při volání AppSheet API:", error.response?.data || error.message);
-        return res.status(500).json({ error: error.response?.data || error.message });
-    }
+            return res.status(200).json({ message: "Záznam úspěšně přidán do AppSheet!", response: response.data });
+        } catch (error) {
+            return res.status(500).json({ error: error.response?.data || error.message });
+        }
+    });
 });
 
 // ✅ Aktualizace existujícího záznamu v AppSheet
-exports.updateAppSheetEvent = onRequest(async (req, res) => {
-    console.log("📨 Příchozí data:", req.body);
-
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
-
-    if (req.method === "OPTIONS") {
-        return res.status(204).send("");
-    }
-
-    try {
-        const { rowId, Datum, Parta } = req.body;
-
-        if (!rowId) {
-            console.error("❌ Chybí rowId!", req.body);
-            return res.status(400).json({ error: "❌ Chybí rowId" });
+exports.updateAppSheetEvent = functions.https.onRequest((req, res) => {
+    cors(req, res, async () => {
+        try {
+            const { rowId, Datum, Parta } = req.body;
+            if (!rowId) {
+                return res.status(400).json({ error: "❌ Chybí rowId" });
+            }
+            const requestData = {
+                Action: "Edit",
+                Rows: [{ "Row ID": rowId, Datum, Parta }]
+            };
+            const response = await axios.post(
+                `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Action`,
+                requestData,
+                { headers: { "ApplicationAccessKey": APPSHEET_API_KEY } }
+            );
+            return res.status(200).json({ message: "Záznam úspěšně aktualizován!", response: response.data });
+        } catch (error) {
+            return res.status(500).json({ error: error.response?.data || error.message });
         }
-
-        console.log("✅ Přijaté hodnoty:", { rowId, Datum, Parta });
-
-        const requestData = {
-            Action: "Edit",
-            Rows: [{ "Row ID": rowId, Datum, Parta }]
-        };
-
-        console.log("📡 Odesílám data do AppSheet:", requestData);
-
-        const response = await axios.post(
-            `https://api.appsheet.com/api/v2/apps/${config.APPSHEET_APP_ID}/tables/Zadání/Action`,
-            requestData,
-            { headers: { "ApplicationAccessKey": config.APPSHEET_API_KEY } }
-        );
-
-        console.log("✅ Odpověď z AppSheet:", response.data);
-        return res.status(200).json({ message: "Záznam úspěšně aktualizován!", response: response.data });
-    } catch (error) {
-        console.error("❌ Chyba při volání AppSheet API:", error.response?.data || error.message);
-        return res.status(500).json({ error: error.response?.data || error.message });
-    }
+    });
 });
+
 
 // ✅ CORS Handler
 exports.corsHandler = onRequest((req, res) => {
