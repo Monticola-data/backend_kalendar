@@ -78,8 +78,7 @@ function convertDateFormat(dateStr) {
 }
 
 // ✅ Fetch AppSheet Data
-exports.fetchAppSheetData = functions.https.onRequest((req, res) => {
-    cors(req, res, async () => {
+exports.fetchAppSheetData = onRequest((req, res) => {
         res.set("Access-Control-Allow-Origin", "*");
         res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         res.set("Access-Control-Allow-Headers", "Content-Type");
@@ -132,8 +131,7 @@ exports.fetchAppSheetData = functions.https.onRequest((req, res) => {
 
 
 // ✅ Přidání nového záznamu do AppSheet
-exports.addToAppSheet = functions.https.onRequest((req, res) => {
-    cors(req, res, async () => {
+exports.addToAppSheet = onRequest((req, res) => {
         res.set("Access-Control-Allow-Origin", "*");
         res.set("Access-Control-Allow-Methods", "POST");
         res.set("Access-Control-Allow-Headers", "Content-Type");
