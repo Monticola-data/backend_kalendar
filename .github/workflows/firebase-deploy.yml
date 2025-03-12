@@ -32,4 +32,4 @@ jobs:
           gcloud auth activate-service-account --key-file=service-account.json
 
       - name: Deploy Firebase Functions
-        run: firebase deploy --only functions --non-interactive --project backend-kalendar
+        run: firebase deploy --only functions --non-interactive --project kalendar-831f8
