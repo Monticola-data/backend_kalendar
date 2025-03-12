@@ -6,7 +6,6 @@ const admin = require("firebase-admin");
 const axios = require("axios");
 
 const { onRequest } = require("firebase-functions/v2/https");
-const cors = require("cors");
 const express = require("express");
 
 admin.initializeApp();
