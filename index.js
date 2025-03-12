@@ -121,7 +121,6 @@ exports.fetchAppSheetData = functions.https.onRequest((req, res) => {
     });
 });
 
-
 // ✅ Přidání nového záznamu do AppSheet
 exports.addToAppSheet = functions.https.onRequest((req, res) => {
     cors(req, res, async () => {
