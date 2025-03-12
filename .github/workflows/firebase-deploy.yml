@@ -30,10 +30,17 @@ jobs:
         run: |
           echo "$SERVICE_ACCOUNT_JSON" > service-account.json
           echo "GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/service-account.json" >> $GITHUB_ENV
+          gcloud auth activate-service-account --key-file=$(pwd)/service-account.json
 
       - name: Enable required Google APIs
         run: |
-          gcloud services enable cloudfunctions.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com --project backend-kalendar
+          gcloud services enable \
+            cloudfunctions.googleapis.com \
+            cloudbuild.googleapis.com \
+            artifactregistry.googleapis.com \
+            cloudresourcemanager.googleapis.com \
+            iam.googleapis.com \
+            --project backend-kalendar
 
       - name: Deploy to Firebase
         run: firebase deploy --project backend-kalendar
