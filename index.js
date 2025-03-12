@@ -1,12 +1,10 @@
 const functions = require("firebase-functions");
 const cors = require("cors")({ origin: true });
-
 const config = require("./config.json");
 const admin = require("firebase-admin");
 const axios = require("axios");
 
 const { onRequest } = require("firebase-functions/v2/https");
-const cors = require("cors");
 const express = require("express");
 
 admin.initializeApp();
@@ -24,15 +22,13 @@ const webhookApp = express();
 webhookApp.use(cors({ origin: true }));
 webhookApp.use(express.json());
 
+let refreshStatus = { type: "none", rowId: null }; 
+
 webhookApp.post("/", async (req, res) => {
     try {
-        console.log("📩 Příchozí data z AppSheet:", req.body);
-
         if (req.body.rowId) {
-            refreshStatus = { type: "update", rowId: req.body.rowId }; // ✅ Uložíme změnu do paměti
-            console.log("🔄 Nastaven nový refresh status:", refreshStatus);
+            refreshStatus = { type: "update", rowId: req.body.rowId };
         }
-
         res.status(200).json({ message: "✅ Webhook přijal data úspěšně!" });
     } catch (error) {
         console.error("❌ Chyba při zpracování webhooku:", error.message);
@@ -42,19 +38,24 @@ webhookApp.post("/", async (req, res) => {
 
 exports.webhook = onRequest(webhookApp);
 
-// ✅ Funkce pro kontrolu změn (vrací status a resetuje ho)
-let refreshStatus = { type: "none", rowId: null }; // ✅ Paměťová proměnná pro sledování změn
+// ✅ Kontrola změn
+exports.checkRefreshStatus = onRequest((req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
 
-exports.checkRefreshStatus = functions.https.onRequest((req, res) => {
-    cors(req, res, () => {
-        if (refreshStatus.type === "update") {
-            const response = { ...refreshStatus };
-            refreshStatus = { type: "none", rowId: null };
-            return res.status(200).json(response);
-        }
-        return res.status(200).json({ type: "none", rowId: null });
-    });
+    if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+    }
+
+    if (refreshStatus.type === "update") {
+        const response = { ...refreshStatus };
+        refreshStatus = { type: "none", rowId: null };
+        return res.status(200).json(response);
+    }
+    return res.status(200).json({ type: "none", rowId: null });
 });
+
 
 // ✅ Funkce pro převod datumu
 function convertDateFormat(dateStr) {
@@ -120,6 +121,7 @@ exports.fetchAppSheetData = functions.https.onRequest((req, res) => {
         }
     });
 });
+
 
 // ✅ Přidání nového záznamu do AppSheet
 exports.addToAppSheet = functions.https.onRequest((req, res) => {
