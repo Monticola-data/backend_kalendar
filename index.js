@@ -1,10 +1,9 @@
 const functions = require("firebase-functions");
+const { onRequest } = require("firebase-functions/v2/https");
 const cors = require("cors")({ origin: true });
 const config = require("./config.json");
 const admin = require("firebase-admin");
 const axios = require("axios");
-
-const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
 
 admin.initializeApp();
@@ -17,28 +16,30 @@ if (!APPSHEET_API_KEY || !APPSHEET_APP_ID) {
     process.exit(1);
 }
 
+// Musí být definováno globálně
+let refreshStatus = { type: "none", rowId: null };
+
 // ✅ Webhook přijímá změny z AppSheet a ukládá je do globální proměnné
 const webhookApp = express();
-webhookApp.use(cors({ origin: true }));
+webhookApp.use(cors);
 webhookApp.use(express.json());
-
-let refreshStatus = { type: "none", rowId: null }; 
 
 webhookApp.post("/", async (req, res) => {
     try {
         if (req.body.rowId) {
             refreshStatus = { type: "update", rowId: req.body.rowId };
+            console.log("✅ Webhook nastavil refreshStatus:", refreshStatus);
         }
         res.status(200).json({ message: "✅ Webhook přijal data úspěšně!" });
     } catch (error) {
-        console.error("❌ Chyba při zpracování webhooku:", error.message);
+        console.error("❌ Chyba webhook:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
 
 exports.webhook = onRequest(webhookApp);
 
-// ✅ Kontrola změn
+// ✅ Funkce kontrolující změny pro frontend
 exports.checkRefreshStatus = onRequest((req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -48,9 +49,11 @@ exports.checkRefreshStatus = onRequest((req, res) => {
         return res.status(204).send("");
     }
 
+    console.log("🔍 checkRefreshStatus vrací:", refreshStatus);
+
     if (refreshStatus.type === "update") {
         const response = { ...refreshStatus };
-        refreshStatus = { type: "none", rowId: null };
+        refreshStatus = { type: "none", rowId: null };  // resetujeme stav po přečtení
         return res.status(200).json(response);
     }
     return res.status(200).json({ type: "none", rowId: null });
