@@ -184,7 +184,6 @@ exports.addToAppSheet = onRequest(async (req, res) => {
     }
 });
 
-
 // ✅ Aktualizace existujícího záznamu v AppSheet
 exports.updateAppSheetEvent = onRequest(async (req, res) => {
     console.log("📨 Příchozí data:", req.body);
