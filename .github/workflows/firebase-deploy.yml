@@ -33,4 +33,4 @@ jobs:
           gcloud auth activate-service-account --key-file=service-account.json
 
       - name: Deploy to Firebase
-        run: firebase deploy --project backend-kalendar
+        run: firebase deploy --project backend-kalendar --non-interactive --only functions,hosting
