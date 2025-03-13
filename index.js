@@ -1,5 +1,5 @@
-const functions = require("firebase-functions");
 const { onRequest } = require("firebase-functions/v2/https");
+const { onValueCreated } = require("firebase-functions/v2/database");
 const admin = require("firebase-admin");
 const express = require("express");
 const cors = require("cors")({ origin: true });
@@ -57,28 +57,26 @@ exports.webhook = onRequest(async (req, res) => {
 
 
 
-exports.processWebhookQueue = functions.database
-    .ref("webhookQueue/{pushId}")
-    .onCreate(async (snapshot, context) => {
-        const data = snapshot.val();
-        const rowId = data.rowId;
+exports.processWebhookQueue = onValueCreated("webhookQueue/{pushId}", async (event) => {
+    const data = event.data.val();
+    const rowId = data.rowId;
 
-        try {
-            await db.ref("refreshStatus").set({
-                type: "update",
-                rowId,
-                timestamp: admin.database.ServerValue.TIMESTAMP
-            });
+    try {
+        await db.ref("refreshStatus").set({
+            type: "update",
+            rowId,
+            timestamp: admin.database.ServerValue.TIMESTAMP
+        });
 
-            console.log("✅ refreshStatus aktualizován asynchronně:", rowId);
+        console.log("✅ refreshStatus aktualizován asynchronně:", rowId);
 
-            // označ záznam jako hotový:
-            await snapshot.ref.update({ status: "done" });
-        } catch (error) {
-            console.error("❌ Chyba při asynchronním zpracování:", error);
-            await snapshot.ref.update({ status: "error", error: error.message });
-        }
-    });
+        // označ záznam jako hotový:
+        await event.data.ref.update({ status: "done" });
+    } catch (error) {
+        console.error("❌ Chyba při asynchronním zpracování:", error);
+        await event.data.ref.update({ status: "error", error: error.message });
+    }
+});
 
 
 
