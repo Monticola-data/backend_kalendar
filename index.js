@@ -96,60 +96,61 @@ function convertDateFormat(dateStr) {
 
 
 
-exports.fetchAppSheetData = onRequest((req, res) => {
-        res.set("Access-Control-Allow-Origin", "*");
-        res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.set("Access-Control-Allow-Headers", "Content-Type");
+exports.fetchAppSheetData = onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
 
-        if (req.method === "OPTIONS") {
-            return res.status(204).send("");
-        }
+    if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+    }
 
-        try {
-            const partyUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Uživatelé%20party/Find`;
-            const partyResponse = await axios.post(partyUrl, { "Select": ["Row ID", "Parta", "HEX"] }, {
-                headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
-            });
+    try {
+        const partyUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Uživatelé%20party/Find`;
+        const partyResponse = await axios.post(partyUrl, { "Select": ["Row ID", "Parta", "HEX"] }, {
+            headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
+        });
 
-            const partyMap = {};
-            partyResponse.data.forEach(party => {
-                if (party["Row ID"]) {
-                    partyMap[party["Row ID"]] = {
-                        name: party.Parta || "Neznámá parta",
-                        color: party.HEX || "#145C7E"
-                    };
-                }
-            });
+        const partyMap = {};
+        partyResponse.data.forEach(party => {
+            if (party["Row ID"]) {
+                partyMap[party["Row ID"]] = {
+                    name: party.Parta || "Neznámá parta",
+                    color: party.HEX || "#145C7E"
+                };
+            }
+        });
 
-            const zadaniUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Find`;
-            const zadaniResponse = await axios.post(zadaniUrl, { "Select": ["Row ID", "Obec", "Datum", "Parta", "Odeslané", "Hotové", "Předané", "Detail"] }, {
-                headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
-            });
+        const zadaniUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Find`;
+        const zadaniResponse = await axios.post(zadaniUrl, { "Select": ["Row ID", "Obec", "Datum", "Parta", "Odeslané", "Hotové", "Předané", "Detail"] }, {
+            headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
+        });
 
-            const events = zadaniResponse.data.map(record => ({
-                id: record["Row ID"],
-                title: record.Obec || "Neznámá obec",
-                start: convertDateFormat(record.Datum),
-                color: (partyMap[record.Parta] || {}).color || "#145C7E",
-                party: record.Parta,
-                extendedProps: {
-                    odeslane: record.Odeslané === "Y",
-                    hotove: record.Hotové === "Y",
-                    predane: record.Předané === "Y",
-                    detail: record.Detail || ""
-                }
-            }));
+        const events = zadaniResponse.data.map(record => ({
+            id: record["Row ID"],
+            title: record.Obec || "Neznámá obec",
+            start: convertDateFormat(record.Datum),
+            color: (partyMap[record.Parta] || {}).color || "#145C7E",
+            party: record.Parta,
+            extendedProps: {
+                odeslane: record.Odeslané === "Y",
+                hotove: record.Hotové === "Y",
+                predane: record.Předané === "Y",
+                detail: record.Detail || ""
+            }
+        }));
 
-            return res.status(200).json({ events, partyMap });
-        } catch (error) {
-            return res.status(500).json({ error: error.response?.data || error.message });
-        }
-    });
+        return res.status(200).json({ events, partyMap });
+    } catch (error) {
+        console.error("❌ Chyba:", error);
+        return res.status(500).json({ error: error.response?.data || error.message });
+    }
+});
 
 
 
 
-exports.addToAppSheet = onRequest((req, res) => {
+exports.addToAppSheet = onRequest(async (req, res) => {
         res.set("Access-Control-Allow-Origin", "*");
         res.set("Access-Control-Allow-Methods", "POST");
         res.set("Access-Control-Allow-Headers", "Content-Type");
@@ -226,7 +227,7 @@ exports.updateAppSheetEvent = onRequest(async (req, res) => {
 
 
 
-exports.corsHandler = onRequest((req, res) => {
+exports.corsHandler = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
