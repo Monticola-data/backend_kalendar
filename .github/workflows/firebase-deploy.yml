@@ -27,8 +27,8 @@ jobs:
         env:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
         run: |
-          echo "$SERVICE_ACCOUNT_JSON" > service-account.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/service-account.json" >> $GITHUB_ENV
+          echo "$SERVICE_ACCOUNT_JSON" > backend-functions/service-account.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/backend-functions/service-account.json" >> $GITHUB_ENV
 
       - name: Deploy Firebase Functions
         working-directory: backend-functions
