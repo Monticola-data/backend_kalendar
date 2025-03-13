@@ -8,8 +8,10 @@ const config = require("./config.json");
 
 // ✅ správná inicializace Firebase
 admin.initializeApp({
+  credential: admin.credential.cert("./service-account.json"),
   databaseURL: "https://kalendar-831f8-default-rtdb.firebaseio.com/"
 });
+
 const db = admin.database();
 
 const APPSHEET_API_KEY = config.APPSHEET_API_KEY;
