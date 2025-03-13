@@ -36,6 +36,8 @@ exports.webhook = onRequest(async (req, res) => {
     }
 
     const rowId = req.body.Data?.["Row ID"] || req.body.rowId;
+    console.log("📩 Příchozí data z AppSheet:", req.body);
+
     if (rowId) {
         try {
             await db.ref("refreshStatus").set({
@@ -44,6 +46,7 @@ exports.webhook = onRequest(async (req, res) => {
                 timestamp: admin.database.ServerValue.TIMESTAMP
             });
             console.log("✅ Data uložena do RTDB", rowId);
+            return res.status(200).json({ message: "Webhook přijal data úspěšně!" });
         } catch (error) {
             console.error("❌ Chyba při ukládání do RTDB:", error);
             return res.status(500).json({ error: error.message });
@@ -52,9 +55,9 @@ exports.webhook = onRequest(async (req, res) => {
         console.log("⚠️ Chybí rowId", req.body);
         return res.status(400).json({ error: "Chybí rowId" });
     }
-
-    return res.status(200).json({ message: "Webhook přijal data úspěšně!" });
 });
+
+
 
 
 
