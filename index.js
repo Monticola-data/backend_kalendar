@@ -239,3 +239,28 @@ exports.corsHandler = onRequest((req, res) => {
 
     res.status(400).send("Neplatná žádost");
 });
+
+
+
+exports.testWrite = onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).send("");
+  }
+
+  try {
+    await db.ref("testPath").set({
+      test: "Hello world!",
+      timestamp: admin.database.ServerValue.TIMESTAMP
+    });
+    console.log("✅ Testovací data úspěšně zapsána do RTDB");
+    return res.status(200).send("Data úspěšně zapsána.");
+  } catch (error) {
+    console.error("❌ Chyba při zápisu:", error);
+    return res.status(500).send("Chyba: " + error.message);
+  }
+});
+
