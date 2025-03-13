@@ -145,7 +145,6 @@ exports.fetchAppSheetData = onRequest((req, res) => {
             return res.status(500).json({ error: error.response?.data || error.message });
         }
     });
-});
 
 
 
@@ -182,7 +181,6 @@ exports.addToAppSheet = onRequest((req, res) => {
             return res.status(500).json({ error: error.response?.data || error.message });
         }
     });
-});
 
 
 
