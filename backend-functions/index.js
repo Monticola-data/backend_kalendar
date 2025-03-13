@@ -59,7 +59,7 @@ exports.webhook = onRequest(async (req, res) => {
 
 
 
-exports.processWebhookQueue = onValueCreated("webhookQueue/{pushId}", async (event) => {
+exports.processWebhookQueue = onValueCreated("/webhookQueue/{pushId}", async (event) => {
     const data = event.data.val();
     const rowId = data.rowId;
 
@@ -71,8 +71,6 @@ exports.processWebhookQueue = onValueCreated("webhookQueue/{pushId}", async (eve
         });
 
         console.log("✅ refreshStatus aktualizován asynchronně:", rowId);
-
-        // označ záznam jako hotový:
         await event.data.ref.update({ status: "done" });
     } catch (error) {
         console.error("❌ Chyba při asynchronním zpracování:", error);
