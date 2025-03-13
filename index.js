@@ -151,37 +151,38 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
 
 
 exports.addToAppSheet = onRequest(async (req, res) => {
-        res.set("Access-Control-Allow-Origin", "*");
-        res.set("Access-Control-Allow-Methods", "POST");
-        res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
 
-        if (req.method !== "POST") {
-            return res.status(405).send("Pouze POST metoda je povolena.");
-        }
+    if (req.method !== "POST") {
+        return res.status(405).send("Pouze POST metoda je povolena.");
+    }
 
-        try {
-            const requestData = {
-                Action: "Add",
-                Properties: { Locale: "en-US" },
-                Rows: [{
-                    "Obec": req.body.Obec || "Neznámá obec",
-                    "Datum": req.body.Datum || new Date().toISOString(),
-                    "Parta": req.body.Parta || "Neznámá parta",
-                    "Činnost": Array.isArray(req.body.Činnost) ? req.body.Činnost : [req.body.Činnost],
-                    "Detail": req.body.Detail || ""
-                }]
-            };
+    try {
+        const requestData = {
+            Action: "Add",
+            Properties: { Locale: "en-US" },
+            Rows: [{
+                "Obec": req.body.Obec || "Neznámá obec",
+                "Datum": req.body.Datum || new Date().toISOString(),
+                "Parta": req.body.Parta || "Neznámá parta",
+                "Činnost": Array.isArray(req.body.Činnost) ? req.body.Činnost : [req.body.Činnost],
+                "Detail": req.body.Detail || ""
+            }]
+        };
 
-            const response = await axios.post(
-                `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Action`,
-                requestData, { headers: { "ApplicationAccessKey": APPSHEET_API_KEY } }
-            );
+        const response = await axios.post(
+            `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Action`,
+            requestData, { headers: { "ApplicationAccessKey": APPSHEET_API_KEY } }
+        );
 
-            return res.status(200).json({ message: "Záznam úspěšně přidán do AppSheet!", response: response.data });
-        } catch (error) {
-            return res.status(500).json({ error: error.response?.data || error.message });
-        }
-    });
+        return res.status(200).json({ message: "Záznam úspěšně přidán do AppSheet!", response: response.data });
+    } catch (error) {
+        return res.status(500).json({ error: error.response?.data || error.message });
+    }
+});
+
 
 
 
