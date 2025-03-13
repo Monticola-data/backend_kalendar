@@ -23,12 +23,12 @@ const db = admin.database();
 let refreshStatus = { type: "none", rowId: null };
 
 const webhookApp = express();
-webhookApp.use(cors);
+webhookApp.use(cors({ origin: true }));
 webhookApp.use(express.json());
 
 
 
-exports.webhook = onRequest((req, res) => {
+exports.webhook = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
@@ -37,18 +37,19 @@ exports.webhook = onRequest((req, res) => {
         return res.status(204).send("");
     }
 
-    cors(req, res, async () => {
-        const rowId = req.body.Data?.["Row ID"] || req.body.rowId;
-        if (rowId) {
-            await db.ref("refreshStatus").set({
-                type: "update",
-                rowId,
-                timestamp: admin.database.ServerValue.TIMESTAMP
-            });
-            console.log("✅ Webhook nastavil refreshStatus v Realtime DB:", rowId);
-        }
-        res.status(200).json({ message: "Webhook přijal data úspěšně!" });
-    });
+    const rowId = req.body.Data?.["Row ID"] || req.body.rowId;
+    if (rowId) {
+        await db.ref("refreshStatus").set({
+            type: "update",
+            rowId,
+            timestamp: admin.database.ServerValue.TIMESTAMP
+        });
+        console.log("✅ Webhook nastavil refreshStatus v Realtime DB:", rowId);
+    } else {
+        console.log("⚠️ Webhook NEOBSAHOVAL rowId:", req.body);
+    }
+
+    return res.status(200).json({ message: "Webhook přijal data úspěšně!" });
 });
 
 
