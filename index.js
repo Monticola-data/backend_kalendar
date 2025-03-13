@@ -28,35 +28,57 @@ let refreshStatus = { type: "none", rowId: null };
 
 exports.webhook = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS") {
-        return res.status(204).send("");
-    }
+    if (req.method === "OPTIONS") return res.status(204).send("");
 
     const rowId = req.body.Data?.["Row ID"] || req.body.rowId;
-    console.log("📩 Příchozí data z AppSheet:", req.body);
 
     if (rowId) {
+        try {
+            await db.ref("webhookQueue").push({
+                rowId,
+                status: "waiting",
+                timestamp: admin.database.ServerValue.TIMESTAMP
+            });
+            console.log("✅ Data ihned vložena do fronty.");
+        } catch (error) {
+            console.error("❌ Chyba ukládání do fronty:", error);
+            return res.status(500).send("Chyba ukládání dat.");
+        }
+    } else {
+        console.warn("⚠️ Chybí rowId v požadavku:", req.body);
+        return res.status(400).send("Chybí rowId.");
+    }
+
+    return res.status(200).send("Webhook data přijata.");
+});
+
+
+
+exports.processWebhookQueue = functions.database
+    .ref("webhookQueue/{pushId}")
+    .onCreate(async (snapshot, context) => {
+        const data = snapshot.val();
+        const rowId = data.rowId;
+
         try {
             await db.ref("refreshStatus").set({
                 type: "update",
                 rowId,
                 timestamp: admin.database.ServerValue.TIMESTAMP
             });
-            console.log("✅ Data uložena do RTDB", rowId);
-            return res.status(200).json({ message: "Webhook přijal data úspěšně!" });
-        } catch (error) {
-            console.error("❌ Chyba při ukládání do RTDB:", error);
-            return res.status(500).json({ error: error.message });
-        }
-    } else {
-        console.log("⚠️ Chybí rowId", req.body);
-        return res.status(400).json({ error: "Chybí rowId" });
-    }
-});
 
+            console.log("✅ refreshStatus aktualizován asynchronně:", rowId);
+
+            // označ záznam jako hotový:
+            await snapshot.ref.update({ status: "done" });
+        } catch (error) {
+            console.error("❌ Chyba při asynchronním zpracování:", error);
+            await snapshot.ref.update({ status: "error", error: error.message });
+        }
+    });
 
 
 
