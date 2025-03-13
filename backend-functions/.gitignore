@@ -1,2 +1,4 @@
-node_modules/
-*.local
+"backend-functions/service-account.json" 
+"backend-functions/node_modules" 
+"backend-functions/config.json" 
+"backend-functions/service-account.json" 
