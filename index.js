@@ -1,3 +1,17 @@
+const functions = require("firebase-functions");
+const { onRequest } = require("firebase-functions/v2/https");
+const admin = require("firebase-admin");
+const express = require("express");
+const cors = require("cors")({ origin: true });
+const axios = require("axios");
+const config = require("./config.json");
+
+// ✅ správná inicializace Firebase
+admin.initializeApp({
+  databaseURL: "https://kalendar-831f8-default-rtdb.firebaseio.com/"
+});
+const db = admin.database();
+
 const APPSHEET_API_KEY = config.APPSHEET_API_KEY;
 const APPSHEET_APP_ID = config.APPSHEET_APP_ID;
 
@@ -6,27 +20,11 @@ if (!APPSHEET_API_KEY || !APPSHEET_APP_ID) {
     process.exit(1);
 }
 
-const functions = require("firebase-functions");
-const { onRequest } = require("firebase-functions/v2/https");
-
-const cors = require("cors")({ origin: true });
-const config = require("./config.json");
-const axios = require("axios");
-const express = require("express");
-
-const admin = require("firebase-admin");
-admin.initializeApp({
-  databaseURL: "https://kalendar-831f8-default-rtdb.firebaseio.com/"
-});
-const db = admin.database();
-
-let refreshStatus = { type: "none", rowId: null };
-
 const webhookApp = express();
-webhookApp.use(cors({ origin: true }));
+webhookApp.use(cors);
 webhookApp.use(express.json());
 
-
+let refreshStatus = { type: "none", rowId: null };
 
 exports.webhook = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
