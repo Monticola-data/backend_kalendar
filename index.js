@@ -37,19 +37,24 @@ exports.webhook = onRequest(async (req, res) => {
 
     const rowId = req.body.Data?.["Row ID"] || req.body.rowId;
     if (rowId) {
-        await db.ref("refreshStatus").set({
-            type: "update",
-            rowId,
-            timestamp: admin.database.ServerValue.TIMESTAMP
-        });
-        console.log("✅ Webhook nastavil refreshStatus v Realtime DB:", rowId);
+        try {
+            await db.ref("refreshStatus").set({
+                type: "update",
+                rowId,
+                timestamp: admin.database.ServerValue.TIMESTAMP
+            });
+            console.log("✅ Data uložena do RTDB", rowId);
+        } catch (error) {
+            console.error("❌ Chyba při ukládání do RTDB:", error);
+            return res.status(500).json({ error: error.message });
+        }
     } else {
-        console.log("⚠️ Webhook NEOBSAHOVAL rowId:", req.body);
+        console.log("⚠️ Chybí rowId", req.body);
+        return res.status(400).json({ error: "Chybí rowId" });
     }
 
     return res.status(200).json({ message: "Webhook přijal data úspěšně!" });
 });
-
 
 
 
