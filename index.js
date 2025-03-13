@@ -1,13 +1,3 @@
-const functions = require("firebase-functions");
-const { onRequest } = require("firebase-functions/v2/https");
-const cors = require("cors")({ origin: true });
-const config = require("./config.json");
-const admin = require("firebase-admin");
-const axios = require("axios");
-const express = require("express");
-
-admin.initializeApp();
-
 const APPSHEET_API_KEY = config.APPSHEET_API_KEY;
 const APPSHEET_APP_ID = config.APPSHEET_APP_ID;
 
@@ -16,36 +6,29 @@ if (!APPSHEET_API_KEY || !APPSHEET_APP_ID) {
     process.exit(1);
 }
 
-// Musí být definováno globálně
+const functions = require("firebase-functions");
+const { onRequest } = require("firebase-functions/v2/https");
+
+const cors = require("cors")({ origin: true });
+const config = require("./config.json");
+const axios = require("axios");
+const express = require("express");
+
+const admin = require("firebase-admin");
+admin.initializeApp({
+  databaseURL: "https://kalendar-831f8-default-rtdb.firebaseio.com/"
+});
+const db = admin.database();
+
 let refreshStatus = { type: "none", rowId: null };
 
-// ✅ Webhook přijímá změny z AppSheet a ukládá je do globální proměnné
 const webhookApp = express();
 webhookApp.use(cors);
 webhookApp.use(express.json());
 
-webhookApp.post("/", async (req, res) => {
-    try {
-        const rowId = req.body.Data?.["Row ID"]; // ✅ Tato část je klíčová!
 
-        if (rowId) {
-            refreshStatus = { type: "update", rowId };
-            console.log("✅ Webhook nastavil refreshStatus:", refreshStatus);
-        } else {
-            console.warn("⚠️ Webhook neobsahuje rowId. Přijatá data:", req.body);
-        }
 
-        res.status(200).json({ message: "✅ Webhook přijal data úspěšně!" });
-    } catch (error) {
-        console.error("❌ Chyba webhook:", error.message);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-exports.webhook = onRequest(webhookApp);
-
-// ✅ Funkce kontrolující změny pro frontend
-exports.checkRefreshStatus = onRequest((req, res) => {
+exports.webhook = onRequest((req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type");
@@ -54,18 +37,44 @@ exports.checkRefreshStatus = onRequest((req, res) => {
         return res.status(204).send("");
     }
 
-    console.log("🔍 checkRefreshStatus vrací:", refreshStatus);
+    cors(req, res, async () => {
+        const rowId = req.body.Data?.["Row ID"] || req.body.rowId;
+        if (rowId) {
+            await db.ref("refreshStatus").set({
+                type: "update",
+                rowId,
+                timestamp: admin.database.ServerValue.TIMESTAMP
+            });
+            console.log("✅ Webhook nastavil refreshStatus v Realtime DB:", rowId);
+        }
+        res.status(200).json({ message: "Webhook přijal data úspěšně!" });
+    });
+});
 
-    if (refreshStatus.type === "update") {
-        const response = { ...refreshStatus };
-        refreshStatus = { type: "none", rowId: null };  // resetujeme stav po přečtení
-        return res.status(200).json(response);
+
+
+
+exports.checkRefreshStatus = onRequest(async (req, res) => { 
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+    }
+
+    const snapshot = await db.ref("refreshStatus").once("value");
+    const refreshStatus = snapshot.val();
+
+    if (refreshStatus?.type === "update") {
+        await db.ref("refreshStatus").remove(); // reset stavu
+        return res.status(200).json(refreshStatus);
     }
     return res.status(200).json({ type: "none", rowId: null });
 });
 
 
-// ✅ Funkce pro převod datumu
+
 function convertDateFormat(dateStr) {
     if (!dateStr) return null;
     const parts = dateStr.split("/");
@@ -77,7 +86,9 @@ function convertDateFormat(dateStr) {
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
-// ✅ Fetch AppSheet Data
+
+
+
 exports.fetchAppSheetData = onRequest((req, res) => {
         res.set("Access-Control-Allow-Origin", "*");
         res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -130,7 +141,8 @@ exports.fetchAppSheetData = onRequest((req, res) => {
 });
 
 
-// ✅ Přidání nového záznamu do AppSheet
+
+
 exports.addToAppSheet = onRequest((req, res) => {
         res.set("Access-Control-Allow-Origin", "*");
         res.set("Access-Control-Allow-Methods", "POST");
@@ -165,7 +177,9 @@ exports.addToAppSheet = onRequest((req, res) => {
     });
 });
 
-// ✅ Aktualizace existujícího záznamu v AppSheet
+
+
+
 exports.updateAppSheetEvent = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -205,7 +219,8 @@ exports.updateAppSheetEvent = onRequest(async (req, res) => {
 });
 
 
-// ✅ CORS Handler
+
+
 exports.corsHandler = onRequest((req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
