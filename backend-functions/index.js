@@ -6,14 +6,16 @@ const cors = require("cors")({ origin: true });
 const axios = require("axios");
 const config = require("./config.json");
 
-if (!admin.apps.length) { // ✅ přidáno: podmínka, která zabrání duplicitní inicializaci!
-    admin.initializeApp({
+// ✅ Definitivně správná inicializace
+const app = !admin.apps.length 
+    ? admin.initializeApp({
         credential: admin.credential.cert("./service-account.json"),
-        databaseURL: "https://kalendar-831f8-default-rtdb.firebaseio.com/"
-    });
-}
+        databaseURL: "https://kalendar-831f8-default-rtdb.firebaseio.com"
+    }) 
+    : admin.app();
 
-const db = admin.database();
+// ✅ Správné explicitní získání reference na databázi přes app
+const db = admin.database(app);
 
 const APPSHEET_API_KEY = config.APPSHEET_API_KEY;
 const APPSHEET_APP_ID = config.APPSHEET_APP_ID;
