@@ -165,10 +165,10 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
                 detail: record.Detail || "",
 
                 // ✅ Definitivní úprava zde:
-                SECURITY_filter: (record.SECURITY_filter || "")
-                    .split(",")
-                    .map(email => email.trim())
-                    .filter(email => email !== "")
+                SECURITY_filter: Array.isArray(record.SECURITY_filter)
+                    ? record.SECURITY_filter.map(email => email.trim())
+                    : (record.SECURITY_filter || "").split(",").map(email => email.trim())
+
             }
         }));
 
