@@ -145,9 +145,8 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
         });
 
         const zadaniUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Find`;
-        
-        // ✅ přidán sloupec SECURITY_filter
-        const zadaniResponse = await axios.post(zadaniUrl, { 
+
+        const zadaniResponse = await axios.post(zadaniUrl, {
             "Select": ["Row ID", "Obec", "Datum", "Parta", "Odeslané", "Hotové", "Předané", "Detail", "SECURITY_filter"]
         }, {
             headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
@@ -164,18 +163,22 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
                 hotove: record.Hotové === "Y",
                 predane: record.Předané === "Y",
                 detail: record.Detail || "",
-                SECURITY_filter: record.SECURITY_filter || []  // ✅ toto je nově přidáno!
+
+                // ✅ Definitivní úprava zde:
+                SECURITY_filter: (record.SECURITY_filter || "")
+                    .split(",")
+                    .map(email => email.trim())
+                    .filter(email => email !== "")
             }
         }));
 
         return res.status(200).json({ events, partyMap });
+
     } catch (error) {
         console.error("❌ Chyba při načítání dat z AppSheet:", error);
         return res.status(500).json({ error: error.response?.data || error.message });
     }
 });
-
-
 
 
 exports.addToAppSheet = onRequest(async (req, res) => {
