@@ -145,7 +145,11 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
         });
 
         const zadaniUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/Zadání/Find`;
-        const zadaniResponse = await axios.post(zadaniUrl, { "Select": ["Row ID", "Obec", "Datum", "Parta", "Odeslané", "Hotové", "Předané", "Detail"] }, {
+        
+        // ✅ přidán sloupec SECURITY_filter
+        const zadaniResponse = await axios.post(zadaniUrl, { 
+            "Select": ["Row ID", "Obec", "Datum", "Parta", "Odeslané", "Hotové", "Předané", "Detail", "SECURITY_filter"]
+        }, {
             headers: { "ApplicationAccessKey": APPSHEET_API_KEY }
         });
 
@@ -159,13 +163,14 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
                 odeslane: record.Odeslané === "Y",
                 hotove: record.Hotové === "Y",
                 predane: record.Předané === "Y",
-                detail: record.Detail || ""
+                detail: record.Detail || "",
+                SECURITY_filter: record.SECURITY_filter || []  // ✅ toto je nově přidáno!
             }
         }));
 
         return res.status(200).json({ events, partyMap });
     } catch (error) {
-        console.error("❌ Chyba:", error);
+        console.error("❌ Chyba při načítání dat z AppSheet:", error);
         return res.status(500).json({ error: error.response?.data || error.message });
     }
 });
