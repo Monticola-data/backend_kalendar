@@ -366,3 +366,41 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(500).send("Chyba při ukládání do Firestore: " + error.message);
     }
 });
+
+exports.updateFirestoreParty = onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") return res.status(204).send("");
+
+    const {
+        partyId,
+        name,
+        color,
+        stredisko
+    } = req.body;
+
+    if (!partyId) {
+        console.error("❌ Chybí partyId!");
+        return res.status(400).send("Chybí partyId");
+    }
+
+    const firestore = admin.firestore();
+
+    const partyData = {
+        name,
+        color,
+        stredisko
+    };
+
+    try {
+        await firestore.collection("parties").doc(partyId).set(partyData, { merge: true });
+        console.log("✅ Party úspěšně aktualizována:", partyId);
+        return res.status(200).send("Party úspěšně aktualizována ve Firestore");
+    } catch (error) {
+        console.error("❌ Chyba při ukládání party do Firestore:", error);
+        return res.status(500).send("Chyba při ukládání party do Firestore: " + error.message);
+    }
+});
+
