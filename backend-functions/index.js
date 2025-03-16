@@ -110,14 +110,15 @@ exports.checkRefreshStatus = onRequest(async (req, res) => {
 
 
 
-function convertDateFormat(dateStr) {
+function convertDateToISO(dateStr) {
     if (!dateStr) return null;
-    const parts = dateStr.split("/");
+    const parts = dateStr.includes("/") ? dateStr.split("/") : dateStr.split(".");
     if (parts.length !== 3) {
         console.warn(`⚠️ Neznámý formát datumu: ${dateStr}`);
-        return null;
+        return dateStr; // vrátit původní, pokud je již správný formát
     }
-    const [month, day, year] = parts;
+
+    const [day, month, year] = parts;
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
@@ -158,24 +159,21 @@ exports.fetchAppSheetData = onRequest(async (req, res) => {
         });
 
         const events = zadaniResponse.data.map(record => ({
-            id: record["Row ID"],
-            title: record.Obec || "Neznámá obec",
-            start: convertDateFormat(record.Datum),
-            color: (partyMap[record.Parta] || {}).color || "#145C7E",
-            party: record.Parta,
-            extendedProps: {
-                odeslane: record.Odeslané === "Y",
-                hotove: record.Hotové === "Y",
-                predane: record.Předané === "Y",
-                detail: record.Detail || "",
-
-                // ✅ Definitivní úprava zde:
-                SECURITY_filter: Array.isArray(record.SECURITY_filter)
-                    ? record.SECURITY_filter.map(email => email.trim())
-                    : (record.SECURITY_filter || "").split(",").map(email => email.trim())
-
-            }
-        }));
+    id: record["Row ID"],
+    title: record.Obec || "Neznámá obec",
+    start: convertDateToISO(record.Datum), // ✅ Zde je definitivní oprava
+    color: (partyMap[record.Parta] || {}).color || "#145C7E",
+    party: record.Parta,
+    extendedProps: {
+        odeslane: record.Odeslané === "Y",
+        hotove: record.Hotové === "Y",
+        predane: record.Předané === "Y",
+        detail: record.Detail || "",
+        SECURITY_filter: Array.isArray(record.SECURITY_filter)
+            ? record.SECURITY_filter.map(email => email.trim())
+            : (record.SECURITY_filter || "").split(",").map(email => email.trim())
+    }
+}));
 
         return res.status(200).json({ events, partyMap });
 
