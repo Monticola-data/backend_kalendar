@@ -325,6 +325,10 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(400).send("Chybí eventId");
     }
 
+    const securityFilterArray = SECURITY_filter
+        ? SECURITY_filter.split(",").map(email => email.trim())
+        : [];
+
     const eventData = {
         title,
         start,
@@ -336,10 +340,10 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         zakazka,
         extendedProps: {
             detail,
-            hotove,
-            predane,
-            odeslane,
-            SECURITY_filter
+            hotove: hotove === "true",
+            predane: predane === "true",
+            odeslane: odeslane === "true",
+            SECURITY_filter: securityFilterArray
         }
     };
 
@@ -352,5 +356,3 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(500).send("Chyba při ukládání do Firestore: " + error.message);
     }
 });
-
-
