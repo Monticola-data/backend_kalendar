@@ -18,7 +18,7 @@ const db = admin.database(app);
 
 const firestore = admin.firestore(app);
 firestore.settings({ 
-    databaseId: "muj-kalendar",      // ⬅️ Klíčová oprava zde
+    databaseId: "muj-kalendar",
     ignoreUndefinedProperties: true
 });
 
@@ -348,12 +348,6 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     };
 
     try {
-        // ✅ Explicitní inicializace Firestore s konkrétní databází
-        const firestore = new admin.firestore.Firestore({
-            projectId: admin.instanceId().app.options.projectId,
-            databaseId: "muj-kalendar"
-        });
-
         await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
 
         console.log("✅ Data úspěšně uložena do Firestore:", eventId);
