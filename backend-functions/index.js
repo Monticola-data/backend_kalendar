@@ -329,6 +329,11 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(400).send("Chybí eventId");
     }
 
+    // Automatická konverze SECURITY_filter z řetězce na pole
+    const securityArray = typeof SECURITY_filter === "string"
+        ? SECURITY_filter.split(",").map(email => email.trim())
+        : SECURITY_filter; // ponechá pole, pokud už pole přijde
+
     const eventData = {
         title,
         start,
@@ -343,11 +348,16 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
             hotove,
             predane,
             odeslane,
-            SECURITY_filter
+            SECURITY_filter: securityArray
         }
     };
 
     try {
+        const firestore = new admin.firestore.Firestore({
+            projectId: admin.instanceId().app.options.projectId,
+            databaseId: "muj-kalendar"
+        });
+
         await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
 
         console.log("✅ Data úspěšně uložena do Firestore:", eventId);
