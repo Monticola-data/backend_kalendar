@@ -278,29 +278,6 @@ exports.corsHandler = onRequest(async (req, res) => {
 
 
 
-exports.testWrite = onRequest(async (req, res) => {
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    return res.status(204).send("");
-  }
-
-  try {
-    await db.ref("testPath").set({
-      test: "Hello world!",
-      timestamp: admin.database.ServerValue.TIMESTAMP
-    });
-    console.log("✅ Testovací data úspěšně zapsána do RTDB");
-    return res.status(200).send("Data úspěšně zapsána.");
-  } catch (error) {
-    console.error("❌ Chyba při zápisu:", error);
-    return res.status(500).send("Chyba: " + error.message);
-  }
-});
-
-// Opravená funkce
 exports.updateFirestoreEvent = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -330,7 +307,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(400).send("Chybí eventId");
     }
 
-    // Klíčová oprava zde ✅
+    // ✅ Oprava pro správnou konverzi SECURITY_filter
     const securityArray = typeof SECURITY_filter === "string"
         ? SECURITY_filter.split(",").map(email => email.trim())
         : Array.isArray(SECURITY_filter) ? SECURITY_filter : [];
@@ -354,9 +331,11 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     };
 
     try {
-        const firestore = new admin.firestore.Firestore({
-            projectId: admin.instanceId().app.options.projectId,
-            databaseId: "muj-kalendar"
+        // ✅ Správná inicializace Firestore s existující aplikací
+        const firestore = admin.firestore();
+        firestore.settings({
+            databaseId: "muj-kalendar",
+            ignoreUndefinedProperties: true
         });
 
         await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
