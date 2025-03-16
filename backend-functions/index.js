@@ -404,3 +404,47 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
     }
 });
 
+exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") return res.status(204).send("");
+
+  const { eventId, start, party } = req.body;
+
+  if (!eventId) {
+    console.error("❌ Chybí eventId!");
+    return res.status(400).send("Chybí eventId");
+  }
+
+  try {
+    const response = await axios.post(
+      `https://api.appsheet.com/api/v2/apps/${config.APPSHEET_APP_ID}/tables/Zadání/Action`,
+      {
+        Action: "Edit",
+        Rows: [
+          {
+            "Row ID": eventId,
+            Datum: start,
+            Parta: party
+          }
+        ]
+      },
+      {
+        headers: {
+          "ApplicationAccessKey": config.APPSHEET_API_KEY,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    console.log("✅ Data úspěšně aktualizována v AppSheet", response.data);
+    return res.status(200).send("Data úspěšně aktualizována v AppSheet");
+  } catch (error) {
+    console.error("❌ Chyba při aktualizaci AppSheet:", error.response?.data || error.message);
+    return res.status(500).send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
+  }
+});
+
+
