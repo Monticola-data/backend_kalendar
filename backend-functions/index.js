@@ -309,30 +309,36 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
 
     const {
         eventId,
-        title,
-        start,
-        startTime,
-        endTime,
-        party,
-        stredisko,
-        status,
-        zakazka,
-        detail,
-        hotove,
-        predane,
-        odeslane,
-        SECURITY_filter
+        title = "",
+        start = "",
+        startTime = "",
+        endTime = "",
+        party = "",
+        stredisko = "",
+        status = "",
+        zakazka = "",
+        detail = "",
+        hotove = false,
+        predane = false,
+        odeslane = false,
+        SECURITY_filter = []
     } = req.body;
 
     if (!eventId) {
-        console.error("❌ Chybí eventId!");
+        console.error("❌ Chybí eventId v requestu:", req.body);
         return res.status(400).send("Chybí eventId");
     }
 
-    // Automatická konverze SECURITY_filter z řetězce na pole
-    const securityArray = typeof SECURITY_filter === "string"
-        ? SECURITY_filter.split(",").map(email => email.trim())
-        : SECURITY_filter; // ponechá pole, pokud už pole přijde
+    // Správná a robustní konverze SECURITY_filter z řetězce na pole
+    let securityArray = [];
+    if (typeof SECURITY_filter === "string") {
+        securityArray = SECURITY_filter
+            .split(",")
+            .map(email => email.trim())
+            .filter(email => email.length > 0);
+    } else if (Array.isArray(SECURITY_filter)) {
+        securityArray = SECURITY_filter;
+    }
 
     const eventData = {
         title,
@@ -353,15 +359,16 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     };
 
     try {
-        const firestore = new admin.firestore.Firestore({
-            projectId: admin.instanceId().app.options.projectId,
-            databaseId: "muj-kalendar"
-        });
+        // Správné opětovné použití Firestore instance (doporučeno)
+        const firestore = admin.firestore();
 
-        await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
+        await firestore
+            .collection("events")
+            .doc(eventId)
+            .set(eventData, { merge: true });
 
         console.log("✅ Data úspěšně uložena do Firestore:", eventId);
-        return res.status(200).send("Data úspěšně uložena do Firestore");
+        return res.status(200).send(`✅ Data úspěšně uložena pro eventId: ${eventId}`);
     } catch (error) {
         console.error("❌ Chyba při ukládání do Firestore:", error);
         return res.status(500).send("Chyba při ukládání do Firestore: " + error.message);
