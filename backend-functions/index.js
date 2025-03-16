@@ -325,10 +325,6 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(400).send("Chybí eventId");
     }
 
-    const securityFilterArray = SECURITY_filter
-        ? SECURITY_filter.split(",").map(email => email.trim())
-        : [];
-
     const eventData = {
         title,
         start,
@@ -340,15 +336,19 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         zakazka,
         extendedProps: {
             detail,
-            hotove: hotove === "true",
-            predane: predane === "true",
-            odeslane: odeslane === "true",
-            SECURITY_filter: securityFilterArray
+            hotove,
+            predane,
+            odeslane,
+            SECURITY_filter
         }
     };
 
     try {
+        const firestore = admin.firestore();
+        firestore.settings({ databaseId: "muj-kalendar" });
+
         await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
+
         console.log("✅ Data úspěšně uložena do Firestore:", eventId);
         return res.status(200).send("Data úspěšně uložena do Firestore");
     } catch (error) {
