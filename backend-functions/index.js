@@ -314,22 +314,31 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         securityArray = SECURITY_filter;
     }
 
-    // ✅ Definitivní oprava formátu datumu na ISO 8601
-    let formattedStart = start;
-    if (typeof start === "string" && start.includes(".")) {
-        const [day, month, year] = start.split(".");
-        formattedStart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const firestore = admin.firestore();
+
+    // ✅ Načtení barvy party z Firestore
+    let partyColor = "#000000"; // výchozí barva
+    try {
+        const partyDoc = await firestore.collection("parties").doc(party).get();
+        if (partyDoc.exists) {
+            partyColor = partyDoc.data().color || partyColor;
+        } else {
+            console.warn("⚠️ Party nenalezena:", party);
+        }
+    } catch (error) {
+        console.error("❌ Chyba při načítání party z Firestore:", error);
     }
 
     const eventData = {
         title,
-        start: formattedStart,
+        start,
         startTime,
         endTime,
         party,
         stredisko,
         status,
         zakazka,
+        color: partyColor, // ✅ přidána barva party do eventu
         extendedProps: {
             detail,
             hotove: hotove === true || hotove === "true",
@@ -340,9 +349,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     };
 
     try {
-        const firestore = admin.firestore();
         await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
-
         console.log("✅ Data úspěšně uložena do Firestore:", eventId);
         return res.status(200).send("Data úspěšně uložena do Firestore");
     } catch (error) {
