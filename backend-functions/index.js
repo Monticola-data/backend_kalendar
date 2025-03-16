@@ -307,7 +307,6 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(400).send("Chybí eventId");
     }
 
-    // ✅ Oprava pro správnou konverzi SECURITY_filter
     const securityArray = typeof SECURITY_filter === "string"
         ? SECURITY_filter.split(",").map(email => email.trim())
         : Array.isArray(SECURITY_filter) ? SECURITY_filter : [];
@@ -331,13 +330,6 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     };
 
     try {
-        // ✅ Správná inicializace Firestore s existující aplikací
-        const firestore = admin.firestore();
-        firestore.settings({
-            databaseId: "muj-kalendar",
-            ignoreUndefinedProperties: true
-        });
-
         await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
 
         console.log("✅ Data úspěšně uložena do Firestore:", eventId);
