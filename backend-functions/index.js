@@ -300,6 +300,7 @@ exports.testWrite = onRequest(async (req, res) => {
   }
 });
 
+// Opravená funkce
 exports.updateFirestoreEvent = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -309,36 +310,30 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
 
     const {
         eventId,
-        title = "",
-        start = "",
-        startTime = "",
-        endTime = "",
-        party = "",
-        stredisko = "",
-        status = "",
-        zakazka = "",
-        detail = "",
-        hotove = false,
-        predane = false,
-        odeslane = false,
-        SECURITY_filter = []
+        title,
+        start,
+        startTime,
+        endTime,
+        party,
+        stredisko,
+        status,
+        zakazka,
+        detail,
+        hotove,
+        predane,
+        odeslane,
+        SECURITY_filter
     } = req.body;
 
     if (!eventId) {
-        console.error("❌ Chybí eventId v requestu:", req.body);
+        console.error("❌ Chybí eventId!");
         return res.status(400).send("Chybí eventId");
     }
 
-    // Správná a robustní konverze SECURITY_filter z řetězce na pole
-    let securityArray = [];
-    if (typeof SECURITY_filter === "string") {
-        securityArray = SECURITY_filter
-            .split(",")
-            .map(email => email.trim())
-            .filter(email => email.length > 0);
-    } else if (Array.isArray(SECURITY_filter)) {
-        securityArray = SECURITY_filter;
-    }
+    // Klíčová oprava zde ✅
+    const securityArray = typeof SECURITY_filter === "string"
+        ? SECURITY_filter.split(",").map(email => email.trim())
+        : Array.isArray(SECURITY_filter) ? SECURITY_filter : [];
 
     const eventData = {
         title,
@@ -351,24 +346,23 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         zakazka,
         extendedProps: {
             detail,
-            hotove,
-            predane,
-            odeslane,
+            hotove: hotove === true || hotove === "true",
+            predane: predane === true || predane === "true",
+            odeslane: odeslane === true || odeslane === "true",
             SECURITY_filter: securityArray
         }
     };
 
     try {
-        // Správné opětovné použití Firestore instance (doporučeno)
-        const firestore = admin.firestore();
+        const firestore = new admin.firestore.Firestore({
+            projectId: admin.instanceId().app.options.projectId,
+            databaseId: "muj-kalendar"
+        });
 
-        await firestore
-            .collection("events")
-            .doc(eventId)
-            .set(eventData, { merge: true });
+        await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
 
         console.log("✅ Data úspěšně uložena do Firestore:", eventId);
-        return res.status(200).send(`✅ Data úspěšně uložena pro eventId: ${eventId}`);
+        return res.status(200).send("Data úspěšně uložena do Firestore");
     } catch (error) {
         console.error("❌ Chyba při ukládání do Firestore:", error);
         return res.status(500).send("Chyba při ukládání do Firestore: " + error.message);
