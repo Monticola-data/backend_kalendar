@@ -18,9 +18,9 @@ const db = admin.database(app);
 
 const firestore = admin.firestore(app);
 firestore.settings({ 
-    databaseId: "muj-kalendar",
     ignoreUndefinedProperties: true
 });
+
 
 const APPSHEET_API_KEY = config.APPSHEET_API_KEY;
 const APPSHEET_APP_ID = config.APPSHEET_APP_ID;
