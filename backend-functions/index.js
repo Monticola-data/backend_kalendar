@@ -15,8 +15,12 @@ const app = !admin.apps.length
     : admin.app();
 
 const db = admin.database(app);
+
 const firestore = admin.firestore(app);
-firestore.settings({ ignoreUndefinedProperties: true });
+firestore.settings({ 
+    databaseId: "muj-kalendar",      // ⬅️ Klíčová oprava zde
+    ignoreUndefinedProperties: true
+});
 
 const APPSHEET_API_KEY = config.APPSHEET_API_KEY;
 const APPSHEET_APP_ID = config.APPSHEET_APP_ID;
