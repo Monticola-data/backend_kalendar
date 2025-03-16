@@ -329,16 +329,25 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         console.error("❌ Chyba při načítání party z Firestore:", error);
     }
 
+    // ✅ Funkce pro správnou konverzi data
+    function convertToISO(dateStr) {
+        const parts = dateStr.split(".");
+        if (parts.length === 3) {
+            return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+        }
+        return dateStr;
+    }
+
     const eventData = {
         title,
-        start,
+        start: convertToISO(start),
         startTime,
         endTime,
         party,
         stredisko,
         status,
         zakazka,
-        color: partyColor, // ✅ přidána barva party do eventu
+        color: partyColor,
         extendedProps: {
             detail,
             hotove: hotove === true || hotove === "true",
