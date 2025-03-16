@@ -307,9 +307,13 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(400).send("Chybí eventId");
     }
 
-    const securityArray = typeof SECURITY_filter === "string"
-        ? SECURITY_filter.split(",").map(email => email.trim())
-        : Array.isArray(SECURITY_filter) ? SECURITY_filter : [];
+    // ✅ Definitivní oprava a ošetření SECURITY_filter
+    let securityArray = [];
+    if (typeof SECURITY_filter === "string") {
+        securityArray = SECURITY_filter.split(",").map(email => email.trim());
+    } else if (Array.isArray(SECURITY_filter)) {
+        securityArray = SECURITY_filter;
+    }
 
     const eventData = {
         title,
@@ -330,6 +334,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     };
 
     try {
+        const firestore = admin.firestore();
         await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
 
         console.log("✅ Data úspěšně uložena do Firestore:", eventId);
