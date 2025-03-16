@@ -307,7 +307,6 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(400).send("Chybí eventId");
     }
 
-    // ✅ Definitivní oprava a ošetření SECURITY_filter
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
         securityArray = SECURITY_filter.split(",").map(email => email.trim());
@@ -315,9 +314,16 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         securityArray = SECURITY_filter;
     }
 
+    // ✅ Definitivní oprava formátu datumu na ISO 8601
+    let formattedStart = start;
+    if (typeof start === "string" && start.includes(".")) {
+        const [day, month, year] = start.split(".");
+        formattedStart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+
     const eventData = {
         title,
-        start,
+        start: formattedStart,
         startTime,
         endTime,
         party,
