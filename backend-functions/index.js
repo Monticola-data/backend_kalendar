@@ -6,7 +6,7 @@ const cors = require("cors")({ origin: true });
 const axios = require("axios");
 const config = require("./config.json");
 
-// ✅ Definitivně správná inicializace
+// ✅ Inicializace admin SDK
 const app = !admin.apps.length 
     ? admin.initializeApp({
         credential: admin.credential.cert("./service-account.json"),
@@ -14,8 +14,9 @@ const app = !admin.apps.length
     }) 
     : admin.app();
 
-// ✅ Správné explicitní získání reference na databázi přes app
 const db = admin.database(app);
+const firestore = admin.firestore(app);
+firestore.settings({ ignoreUndefinedProperties: true });
 
 const APPSHEET_API_KEY = config.APPSHEET_API_KEY;
 const APPSHEET_APP_ID = config.APPSHEET_APP_ID;
@@ -294,4 +295,68 @@ exports.testWrite = onRequest(async (req, res) => {
     return res.status(500).send("Chyba: " + error.message);
   }
 });
+
+exports.updateFirestoreEvent = onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") return res.status(204).send("");
+
+    const {
+        eventId,
+        title,
+        start,
+        startTime,
+        end,
+        endTime,
+        color,
+        party,
+        stredisko,
+        status,
+        zakazka,
+        type,
+        detail,
+        hotove,
+        predane,
+        odeslane,
+        SECURITY_filter
+    } = req.body;
+
+    if (!eventId) {
+        console.error("❌ Chybí eventId!");
+        return res.status(400).send("Chybí eventId");
+    }
+
+    const eventData = {
+        title,
+        start,
+        startTime,
+        end,
+        endTime,
+        color,
+        party,
+        stredisko,
+        status,
+        zakazka,
+        type,
+        extendedProps: {
+            detail,
+            hotove,
+            predane,
+            odeslane,
+            SECURITY_filter
+        }
+    };
+
+    try {
+        await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
+        console.log("✅ Data úspěšně uložena do Firestore:", eventId);
+        return res.status(200).send("Data úspěšně uložena do Firestore");
+    } catch (error) {
+        console.error("❌ Chyba při ukládání do Firestore:", error);
+        return res.status(500).send("Chyba při ukládání do Firestore: " + error.message);
+    }
+});
+
 
