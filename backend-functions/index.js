@@ -344,8 +344,11 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     };
 
     try {
-        const firestore = admin.firestore();
-        firestore.settings({ databaseId: "muj-kalendar" });
+        // ✅ Explicitní inicializace Firestore s konkrétní databází
+        const firestore = new admin.firestore.Firestore({
+            projectId: admin.instanceId().app.options.projectId,
+            databaseId: "muj-kalendar"
+        });
 
         await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
 
