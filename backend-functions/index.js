@@ -303,6 +303,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     } = req.body;
 
     const firestore = admin.firestore();
+    const eventRef = firestore.collection("events").doc(eventId);
 
  // DELETE jednoho eventu
 if (action === "delete" && eventId) {
@@ -343,8 +344,6 @@ if (action === "delete_zakazka" && zakazkaId) {
         console.error("❌ Chybí eventId!");
         return res.status(400).send("Chybí eventId");
     }
-
-    const eventRef = firestore.collection("events").doc(eventId);
 
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
