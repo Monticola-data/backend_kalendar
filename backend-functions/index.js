@@ -310,17 +310,40 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     const firestore = admin.firestore();
     const eventRef = firestore.collection("events").doc(eventId);
 
- // ✅ DELETE operace
-    if (action === "delete") {
-        try {
-            await eventRef.delete();
-            console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
-            return res.status(200).send(`Event ${eventId} smazán.`);
-        } catch (error) {
-            console.error("❌ Chyba při mazání z Firestore:", error);
-            return res.status(500).send("Chyba při mazání: " + error.message);
-        }
+ // DELETE jednoho eventu
+if (action === "delete" && eventId) {
+    try {
+        await eventRef.delete();
+        console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
+        return res.status(200).send(`Event ${eventId} smazán.`);
+    } catch (error) {
+        console.error("❌ Chyba při mazání eventu:", error);
+        return res.status(500).send("Chyba při mazání: " + error.message);
     }
+}
+
+// DELETE všech eventů jedné zakázky
+if (action === "delete_zakazka" && zakazkaId) {
+    try {
+        const eventsSnapshot = await firestore
+            .collection("events")
+            .where("zakazkaId", "==", zakazkaId)
+            .get();
+
+        const deletePromises = eventsSnapshot.docs.map(doc => {
+            console.log(`🗑️ Mažu event ${doc.id} (zakázka ${zakazkaId})`);
+            return doc.ref.delete();
+        });
+
+        await Promise.all(deletePromises);
+
+        console.log(`✅ Všechny eventy zakázky ${zakazkaId} smazány.`);
+        return res.status(200).send(`Všechny eventy zakázky ${zakazkaId} smazány.`);
+    } catch (error) {
+        console.error("❌ Chyba při mazání všech eventů zakázky:", error);
+        return res.status(500).send("Chyba při mazání všech eventů: " + error.message);
+    }
+}
 
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
