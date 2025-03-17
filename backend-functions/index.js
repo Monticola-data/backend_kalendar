@@ -283,6 +283,8 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
 
     if (req.method === "OPTIONS") return res.status(204).send("");
 
+     console.log("🔎 Webhook z AppSheet:", JSON.stringify(req.body, null, 2));
+
     const {
         eventId,
         title,
