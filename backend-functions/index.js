@@ -305,6 +305,21 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(400).send("Chybí eventId");
     }
 
+    const firestore = admin.firestore();
+    const eventRef = firestore.collection("events").doc(eventId);
+
+    // ✅ Pokud při DELETE AppSheet pošle prázdné hodnoty
+    if (!title && !start && !party && !stredisko) {
+        try {
+            await eventRef.delete();
+            console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
+            return res.status(200).send(`Event ${eventId} smazán.`);
+        } catch (error) {
+            console.error("❌ Chyba při mazání z Firestore:", error);
+            return res.status(500).send("Chyba při mazání z Firestore: " + error.message);
+        }
+    }
+
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
         securityArray = SECURITY_filter.split(",").map(email => email.trim());
@@ -312,10 +327,8 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         securityArray = SECURITY_filter;
     }
 
-    const firestore = admin.firestore();
-
     // ✅ Načtení barvy party z Firestore
-    let partyColor = "#000000"; // výchozí barva
+    let partyColor = "#000000";
     try {
         const partyDoc = await firestore.collection("parties").doc(party).get();
         if (partyDoc.exists) {
@@ -327,7 +340,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         console.error("❌ Chyba při načítání party z Firestore:", error);
     }
 
-    // ✅ Funkce pro správnou konverzi data
+    // ✅ Konverze data na ISO formát
     function convertToISO(dateStr) {
         const parts = dateStr.split(".");
         if (parts.length === 3) {
@@ -356,14 +369,15 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     };
 
     try {
-        await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
-        console.log("✅ Data úspěšně uložena do Firestore:", eventId);
-        return res.status(200).send("Data úspěšně uložena do Firestore");
+        await eventRef.set(eventData, { merge: true });
+        console.log(`✅ Event ${eventId} uložen/aktualizován ve Firestore.`);
+        return res.status(200).send(`Event ${eventId} aktualizován.`);
     } catch (error) {
         console.error("❌ Chyba při ukládání do Firestore:", error);
         return res.status(500).send("Chyba při ukládání do Firestore: " + error.message);
     }
 });
+
 
 exports.updateFirestoreParty = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
@@ -401,48 +415,3 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
         return res.status(500).send("Chyba při ukládání party do Firestore: " + error.message);
     }
 });
-
-exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") return res.status(204).send("");
-
-  const { eventId, start, party } = req.body;
-
-  if (!eventId) {
-    console.error("❌ Chybí eventId!");
-    return res.status(400).send("Chybí eventId");
-  }
-
-  try {
-    const response = await axios.post(
-      `https://api.appsheet.com/api/v2/apps/${config.APPSHEET_APP_ID}/tables/Zadání/Action`,
-      {
-        Action: "Edit",
-        Rows: [
-          {
-            "Row ID": eventId,
-            Datum: start,
-            Parta: party
-          }
-        ]
-      },
-      {
-        headers: {
-          "ApplicationAccessKey": config.APPSHEET_API_KEY,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    console.log("✅ Data úspěšně aktualizována v AppSheet", response.data);
-    return res.status(200).send("Data úspěšně aktualizována v AppSheet");
-  } catch (error) {
-    console.error("❌ Chyba při aktualizaci AppSheet:", error.response?.data || error.message);
-    return res.status(500).send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
-  }
-});
-
-
