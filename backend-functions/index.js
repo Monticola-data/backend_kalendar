@@ -302,13 +302,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         SECURITY_filter
     } = req.body;
 
-    if (!eventId) {
-        console.error("❌ Chybí eventId!");
-        return res.status(400).send("Chybí eventId");
-    }
-
     const firestore = admin.firestore();
-    const eventRef = firestore.collection("events").doc(eventId);
 
  // DELETE jednoho eventu
 if (action === "delete" && eventId) {
@@ -344,6 +338,13 @@ if (action === "delete_zakazka" && zakazkaId) {
         return res.status(500).send("Chyba při mazání všech eventů: " + error.message);
     }
 }
+
+    if (!eventId) {
+        console.error("❌ Chybí eventId!");
+        return res.status(400).send("Chybí eventId");
+    }
+
+    const eventRef = firestore.collection("events").doc(eventId);
 
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
