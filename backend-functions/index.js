@@ -294,6 +294,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         stredisko,
         status,
         zakazka,
+        zakazkaId,
         detail,
         hotove,
         predane,
@@ -357,6 +358,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         stredisko,
         status,
         zakazka,
+        zakazkaId,
         color: partyColor,
         extendedProps: {
             detail,
