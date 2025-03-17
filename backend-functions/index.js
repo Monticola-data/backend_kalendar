@@ -308,9 +308,8 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     const firestore = admin.firestore();
     const eventRef = firestore.collection("events").doc(eventId);
 
-    // ✅ DELETE operace (pokud AppSheet poslal prázdné hodnoty)
-// ✅ DELETE operace (spolehlivější podmínka)
-if ([title, start, party, stredisko].every(value => !value || value === "")) {
+ // ✅ DELETE operace – stačí, že chybí klíčová pole
+if (!title && !start && !party && !stredisko) {
     try {
         await eventRef.delete();
         console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
@@ -320,8 +319,6 @@ if ([title, start, party, stredisko].every(value => !value || value === "")) {
         return res.status(500).send("Chyba při mazání z Firestore: " + error.message);
     }
 }
-console.log("🔥 AppSheet Request:", { eventId, title, start, party, stredisko });
-
 
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
