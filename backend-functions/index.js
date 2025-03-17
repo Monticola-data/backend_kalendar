@@ -309,16 +309,19 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     const eventRef = firestore.collection("events").doc(eventId);
 
     // ✅ DELETE operace (pokud AppSheet poslal prázdné hodnoty)
-    if (!title && !start && !party && !stredisko) {
-        try {
-            await eventRef.delete();
-            console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
-            return res.status(200).send(`Event ${eventId} smazán.`);
-        } catch (error) {
-            console.error("❌ Chyba při mazání z Firestore:", error);
-            return res.status(500).send("Chyba při mazání z Firestore: " + error.message);
-        }
+// ✅ DELETE operace (spolehlivější podmínka)
+if ([title, start, party, stredisko].every(value => !value || value === "")) {
+    try {
+        await eventRef.delete();
+        console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
+        return res.status(200).send(`Event ${eventId} smazán.`);
+    } catch (error) {
+        console.error("❌ Chyba při mazání z Firestore:", error);
+        return res.status(500).send("Chyba při mazání z Firestore: " + error.message);
     }
+}
+console.log("🔥 AppSheet Request:", { eventId, title, start, party, stredisko });
+
 
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
