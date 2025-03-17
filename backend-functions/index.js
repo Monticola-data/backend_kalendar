@@ -283,8 +283,6 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
 
     if (req.method === "OPTIONS") return res.status(204).send("");
 
-     console.log("🔎 Webhook z AppSheet:", JSON.stringify(req.body, null, 2));
-
     const {
         eventId,
         title,
@@ -310,17 +308,17 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     const firestore = admin.firestore();
     const eventRef = firestore.collection("events").doc(eventId);
 
- // ✅ DELETE operace – stačí, že chybí klíčová pole
-if (!title && !start && !party && !stredisko) {
-    try {
-        await eventRef.delete();
-        console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
-        return res.status(200).send(`Event ${eventId} smazán.`);
-    } catch (error) {
-        console.error("❌ Chyba při mazání z Firestore:", error);
-        return res.status(500).send("Chyba při mazání z Firestore: " + error.message);
+ // ✅ DELETE operace
+    if (action === "delete") {
+        try {
+            await eventRef.delete();
+            console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
+            return res.status(200).send(`Event ${eventId} smazán.`);
+        } catch (error) {
+            console.error("❌ Chyba při mazání z Firestore:", error);
+            return res.status(500).send("Chyba při mazání: " + error.message);
+        }
     }
-}
 
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
