@@ -285,6 +285,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
 
     const {
         eventId,
+        action,
         title,
         start,
         startTime,
