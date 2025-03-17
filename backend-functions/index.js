@@ -305,6 +305,21 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(400).send("Chybí eventId");
     }
 
+    const firestore = admin.firestore();
+    const eventRef = firestore.collection("events").doc(eventId);
+
+    // ✅ DELETE operace (pokud AppSheet poslal prázdné hodnoty)
+    if (!title && !start && !party && !stredisko) {
+        try {
+            await eventRef.delete();
+            console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
+            return res.status(200).send(`Event ${eventId} smazán.`);
+        } catch (error) {
+            console.error("❌ Chyba při mazání z Firestore:", error);
+            return res.status(500).send("Chyba při mazání z Firestore: " + error.message);
+        }
+    }
+
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
         securityArray = SECURITY_filter.split(",").map(email => email.trim());
@@ -312,10 +327,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         securityArray = SECURITY_filter;
     }
 
-    const firestore = admin.firestore();
-
-    // ✅ Načtení barvy party z Firestore
-    let partyColor = "#000000"; // výchozí barva
+    let partyColor = "#000000";
     try {
         const partyDoc = await firestore.collection("parties").doc(party).get();
         if (partyDoc.exists) {
@@ -324,10 +336,9 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
             console.warn("⚠️ Party nenalezena:", party);
         }
     } catch (error) {
-        console.error("❌ Chyba při načítání party z Firestore:", error);
+        console.error("❌ Chyba při načítání party:", error);
     }
 
-    // ✅ Funkce pro správnou konverzi data
     function convertToISO(dateStr) {
         const parts = dateStr.split(".");
         if (parts.length === 3) {
@@ -356,7 +367,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     };
 
     try {
-        await firestore.collection("events").doc(eventId).set(eventData, { merge: true });
+        await eventRef.set(eventData, { merge: true });
         console.log("✅ Data úspěšně uložena do Firestore:", eventId);
         return res.status(200).send("Data úspěšně uložena do Firestore");
     } catch (error) {
@@ -364,6 +375,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return res.status(500).send("Chyba při ukládání do Firestore: " + error.message);
     }
 });
+
 
 exports.updateFirestoreParty = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
