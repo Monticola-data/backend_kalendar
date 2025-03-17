@@ -303,47 +303,56 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     } = req.body;
 
     const firestore = admin.firestore();
-    const eventRef = firestore.collection("events").doc(eventId);
 
- // DELETE jednoho eventu
-if (action === "delete" && eventId) {
-    try {
-        await eventRef.delete();
-        console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
-        return res.status(200).send(`Event ${eventId} smazán.`);
-    } catch (error) {
-        console.error("❌ Chyba při mazání eventu:", error);
-        return res.status(500).send("Chyba při mazání: " + error.message);
+    // DELETE všech eventů jedné zakázky
+    if (action === "delete_zakazka" && zakazkaId) {
+        try {
+            const eventsSnapshot = await firestore
+                .collection("events")
+                .where("zakazkaId", "==", zakazkaId)
+                .get();
+
+            if (eventsSnapshot.empty) {
+                console.log(`ℹ️ Žádné eventy nenalezeny pro zakázku ${zakazkaId}.`);
+                return res.status(200).send(`Žádné eventy nenalezeny.`);
+            }
+
+            const deletePromises = eventsSnapshot.docs.map(doc => {
+                console.log(`🗑️ Mažu event ${doc.id} (zakázka ${zakazkaId})`);
+                return doc.ref.delete();
+            });
+
+            await Promise.all(deletePromises);
+
+            console.log(`✅ Všechny eventy zakázky ${zakazkaId} smazány.`);
+            return res.status(200).send(`Všechny eventy zakázky ${zakazkaId} smazány.`);
+        } catch (error) {
+            console.error("❌ Chyba při mazání eventů zakázky:", error);
+            return res.status(500).send("Chyba při mazání všech eventů: " + error.message);
+        }
     }
-}
 
-// DELETE všech eventů jedné zakázky
-if (action === "delete_zakazka" && zakazkaId) {
-    try {
-        const eventsSnapshot = await firestore
-            .collection("events")
-            .where("zakazkaId", "==", zakazkaId)
-            .get();
-
-        const deletePromises = eventsSnapshot.docs.map(doc => {
-            console.log(`🗑️ Mažu event ${doc.id} (zakázka ${zakazkaId})`);
-            return doc.ref.delete();
-        });
-
-        await Promise.all(deletePromises);
-
-        console.log(`✅ Všechny eventy zakázky ${zakazkaId} smazány.`);
-        return res.status(200).send(`Všechny eventy zakázky ${zakazkaId} smazány.`);
-    } catch (error) {
-        console.error("❌ Chyba při mazání všech eventů zakázky:", error);
-        return res.status(500).send("Chyba při mazání všech eventů: " + error.message);
-    }
-}
-
+    // Od této části dál pracujeme s jedním konkrétním eventem, musí existovat eventId
     if (!eventId) {
-        console.error("❌ Chybí eventId!");
+        console.error("❌ Chybí eventId při vytváření/editaci!");
         return res.status(400).send("Chybí eventId");
     }
+
+    // Teď definujeme eventRef, protože eventId už existuje
+    const eventRef = firestore.collection("events").doc(eventId);
+
+    // DELETE jednoho eventu
+    if (action === "delete") {
+        try {
+            await eventRef.delete();
+            console.log(`🗑️ Event ${eventId} smazán z Firestore.`);
+            return res.status(200).send(`Event ${eventId} smazán.`);
+        } catch (error) {
+            console.error("❌ Chyba při mazání eventu:", error);
+            return res.status(500).send("Chyba při mazání: " + error.message);
+        }
+    }
+    
 
     let securityArray = [];
     if (typeof SECURITY_filter === "string") {
