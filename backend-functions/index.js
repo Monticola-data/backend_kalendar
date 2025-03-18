@@ -458,7 +458,7 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
 
   if (req.method === "OPTIONS") return res.status(204).send("");
 
-  const { eventId, start, party } = req.body;
+  const { eventId, start, party, cas } = req.body;
 
   if (!eventId) {
     console.error("❌ Chybí eventId!");
@@ -474,7 +474,8 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
           {
             "Row ID": eventId,
             Datum: start,
-            Parta: party
+            Parta: party,
+            "Čas": cas || 0
           }
         ]
       },
