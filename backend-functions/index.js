@@ -475,7 +475,7 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
             "Row ID": eventId,
             Datum: start,
             Parta: party,
-            Cas: cas !== undefined ? cas : null  // ✅ přidána hodnota 'cas'
+            cas: cas // ✅ Přidej cas
           }
         ]
       },
