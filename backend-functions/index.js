@@ -288,7 +288,6 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         action,
         title,
         start,
-        cas,
         startTime,
         endTime,
         party,
@@ -382,26 +381,25 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         return dateStr;
     }
 
-  const eventData = {
-    title,
-    start: convertToISO(start),
-    startTime,
-    endTime,
-    party,
-    stredisko,
-    status,
-    zakazka,
-    zakazkaId,
-    color: partyColor,
-    extendedProps: {
-        cas: cas ? Number(cas) : 0, // ✅ přesunuto do extendedProps
-        detail,
-        hotove: hotove === true || hotove === "true",
-        predane: predane === true || predane === "true",
-        odeslane: odeslane === true || odeslane === "true",
-        SECURITY_filter: securityArray
-    }
-};
+    const eventData = {
+        title,
+        start: convertToISO(start),
+        startTime,
+        endTime,
+        party,
+        stredisko,
+        status,
+        zakazka,
+        zakazkaId,
+        color: partyColor,
+        extendedProps: {
+            detail,
+            hotove: hotove === true || hotove === "true",
+            predane: predane === true || predane === "true",
+            odeslane: odeslane === true || odeslane === "true",
+            SECURITY_filter: securityArray
+        }
+    };
 
     try {
         await eventRef.set(eventData, { merge: true });
@@ -458,8 +456,7 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
 
   if (req.method === "OPTIONS") return res.status(204).send("");
 
-  const { eventId, start, party, extendedProps } = req.body;
-  const cas = extendedProps?.cas; // ✅ získání cas z extendedProps
+  const { eventId, start, party } = req.body;
 
   if (!eventId) {
     console.error("❌ Chybí eventId!");
@@ -475,8 +472,7 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
           {
             "Row ID": eventId,
             Datum: start,
-            Parta: party,
-            cas: cas || 0 // ✅ Přidej cas z extendedProps
+            Parta: party
           }
         ]
       },
