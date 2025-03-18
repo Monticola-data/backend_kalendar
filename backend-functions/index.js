@@ -385,6 +385,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     const eventData = {
         title,
         start: convertToISO(start),
+        cas,
         startTime,
         endTime,
         party,
@@ -394,7 +395,6 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         zakazkaId,
         color: partyColor,
         extendedProps: {
-            cas,
             detail,
             hotove: hotove === true || hotove === "true",
             predane: predane === true || predane === "true",
