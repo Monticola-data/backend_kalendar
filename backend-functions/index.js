@@ -385,7 +385,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
     const eventData = {
         title,
         start: convertToISO(start),
-        cas,
+        cas: cas ? Number(cas) : 0,
         startTime,
         endTime,
         party,
