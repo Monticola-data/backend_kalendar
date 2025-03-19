@@ -300,6 +300,8 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         hotove,
         predane,
         odeslane,
+        zakaznik,
+        cinnost,
         SECURITY_filter
     } = req.body;
 
@@ -395,6 +397,8 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         color: partyColor,
         extendedProps: {
             detail,
+            zakaznik,
+            cinnost,
             cas: cas ? Number(cas) : 0,
             hotove: hotove === true || hotove === "true",
             predane: predane === true || predane === "true",
