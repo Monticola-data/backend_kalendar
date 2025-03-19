@@ -466,18 +466,21 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
   }
 
   try {
+    const rowUpdate = {
+      "Row ID": eventId,
+      Datum: start,
+      Parta: party
+    };
+
+    if (typeof cas !== 'undefined') {
+      rowUpdate["Čas"] = cas;  // ✅ nastav jen pokud je posláno
+    }
+
     const response = await axios.post(
       `https://api.appsheet.com/api/v2/apps/${config.APPSHEET_APP_ID}/tables/Zadání/Action`,
       {
         Action: "Edit",
-        Rows: [
-          {
-            "Row ID": eventId,
-            Datum: start,
-            Parta: party,
-            "Čas": cas || 0
-          }
-        ]
+        Rows: [rowUpdate]
       },
       {
         headers: {
@@ -489,6 +492,7 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
 
     console.log("✅ Data úspěšně aktualizována v AppSheet", response.data);
     return res.status(200).send("Data úspěšně aktualizována v AppSheet");
+
   } catch (error) {
     console.error("❌ Chyba při aktualizaci AppSheet:", error.response?.data || error.message);
     return res.status(500).send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
