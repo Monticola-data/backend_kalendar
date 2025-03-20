@@ -303,7 +303,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         zakaznik,
         cinnost,
         SECURITY_filter,
-        uzivatele
+        email
     } = req.body;
 
     const firestore = admin.firestore();
@@ -365,14 +365,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         securityArray = SECURITY_filter;
     }
 
-    let uzivateleArray = [];
-    if (typeof req.body.uzivatele === "string") {
-        uzivateleArray = req.body.uzivatele.split(",").map(id => id.trim());
-    } else if (Array.isArray(req.body.uzivatele)) {
-        uzivateleArray = req.body.uzivatele;
-    }
-
-
+    
     let partyColor = "#000000";
     try {
         const partyDoc = await firestore.collection("parties").doc(party).get();
@@ -413,7 +406,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
             predane: predane === true || predane === "true",
             odeslane: odeslane === true || odeslane === "true",
             SECURITY_filter: securityArray,
-            uzivatele:uzivateleArray
+            email
         }
     };
 
@@ -439,7 +432,8 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
         partyId,
         name,
         color,
-        stredisko
+        stredisko,
+        email
     } = req.body;
 
     if (!partyId) {
@@ -452,7 +446,8 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
     const partyData = {
         name,
         color,
-        stredisko
+        stredisko,
+        email
     };
 
     try {
@@ -463,32 +458,6 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
         console.error("❌ Chyba při ukládání party do Firestore:", error);
         return res.status(500).send("Chyba při ukládání party do Firestore: " + error.message);
     }
-});
-
-exports.updateFirestoreUzivatele = onRequest(async (req, res) => {
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") return res.status(204).send("");
-
-  const { uzivateleId, parta } = req.body;
-
-  if (!uzivateleId || !parta) {
-    console.error("❌ Chybí uzivateleId nebo parta v těle požadavku!");
-    return res.status(400).send("Chybí uzivateleId nebo parta");
-  }
-
-  const firestore = admin.firestore();
-
-  try {
-    await firestore.collection("uzivatele").doc(uzivateleId).set({ parta }, { merge: true });
-    console.log("✅ Uživatel úspěšně aktualizován:", uzivateleId);
-    return res.status(200).send("Uživatel úspěšně aktualizován ve Firestore");
-  } catch (error) {
-    console.error("❌ Chyba při aktualizaci uživatele ve Firestore:", error);
-    return res.status(500).send("Chyba při aktualizaci uživatele ve Firestore: " + error.message);
-  }
 });
 
 
@@ -506,62 +475,36 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
     return res.status(400).send("Chybí eventId");
   }
 
-  if (!party) {
-    console.error("❌ Chybí hodnota party!");
-    return res.status(400).send("Chybí hodnota party");
-  }
-
   try {
-    const firestore = admin.firestore();
-
-    const uzivateleSnapshot = await firestore
-      .collection("uzivatele")
-      .where("parta", "==", party)
-      .get();
-
-    if (uzivateleSnapshot.empty) {
-      console.warn("⚠️ Žádní uživatelé nalezeni pro partu:", party);
-    }
-
-    const delnici = uzivateleSnapshot.docs
-      .map(doc => doc.id.trim())
-      .filter(Boolean);
-
-    const delniciString = delnici.join(","); // ✅ EnumList jako řetězec (správně)
-
-    console.log("✅ Odesílám AppSheet Dělníci:", delniciString);
-
     const rowUpdate = {
       "Row ID": eventId,
       Datum: start,
-      Parta: party,
-      "Dělníci": delniciString
+      Parta: party
     };
 
-    if (typeof cas !== "undefined") {
-      rowUpdate["Čas"] = cas;
+    if (typeof cas !== 'undefined') {
+      rowUpdate["Čas"] = cas;  // ✅ nastav jen pokud je posláno
     }
 
     const response = await axios.post(
       `https://api.appsheet.com/api/v2/apps/${config.APPSHEET_APP_ID}/tables/Zadání/Action`,
       {
         Action: "Edit",
-        Rows: [rowUpdate],
+        Rows: [rowUpdate]
       },
       {
         headers: {
-          ApplicationAccessKey: config.APPSHEET_API_KEY,
-          "Content-Type": "application/json",
-        },
+          "ApplicationAccessKey": config.APPSHEET_API_KEY,
+          "Content-Type": "application/json"
+        }
       }
     );
 
     console.log("✅ Data úspěšně aktualizována v AppSheet", response.data);
     return res.status(200).send("Data úspěšně aktualizována v AppSheet");
+
   } catch (error) {
     console.error("❌ Chyba při aktualizaci AppSheet:", error.response?.data || error.message);
-    return res
-      .status(500)
-      .send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
+    return res.status(500).send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
   }
 });
