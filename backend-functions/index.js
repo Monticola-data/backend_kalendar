@@ -517,7 +517,7 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
       "Row ID": eventId,
       Datum: start,
       Parta: party,
-      "Dělníci": delnici.join(", ")  // ✅ přidání dělníků
+      "Dělníci": delnici
     };
 
     if (typeof cas !== 'undefined') {
