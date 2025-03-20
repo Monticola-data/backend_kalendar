@@ -457,6 +457,33 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
     }
 });
 
+exports.updateFirestoreUzivatele = onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") return res.status(204).send("");
+
+  const { uzivateleId, parta } = req.body;
+
+  if (!uzivateleId || !parta) {
+    console.error("❌ Chybí uzivateleId nebo parta v těle požadavku!");
+    return res.status(400).send("Chybí uzivateleId nebo parta");
+  }
+
+  const firestore = admin.firestore();
+
+  try {
+    await firestore.collection("uzivatele").doc(uzivateleId).set({ parta }, { merge: true });
+    console.log("✅ Uživatel úspěšně aktualizován:", uzivateleId);
+    return res.status(200).send("Uživatel úspěšně aktualizován ve Firestore");
+  } catch (error) {
+    console.error("❌ Chyba při aktualizaci uživatele ve Firestore:", error);
+    return res.status(500).send("Chyba při aktualizaci uživatele ve Firestore: " + error.message);
+  }
+});
+
+
 exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
