@@ -524,18 +524,16 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
     }
 
     const delnici = uzivateleSnapshot.docs
-      .map(doc => doc.id.trim())
+      .map(doc => doc.id.trim()) // zde jsou klíče správně, jak máš uvedeno
       .filter(Boolean);
 
-    const delniciString = delnici.join(" , ");  // ✅ Formát přesně: hodnota1 , hodnota2
-
-    console.log("✅ Nalezení dělníci (správný formát):", delniciString);
+    console.log("✅ Nalezení dělníci (správné ID):", delnici);
 
     const rowUpdate = {
       "Row ID": eventId,
       Datum: start,
       Parta: party,
-      "Dělníci": delniciString
+      "Dělníci": delnici  // ✅ musí být čisté pole klíčů bez úprav!
     };
 
     if (typeof cas !== "undefined") {
