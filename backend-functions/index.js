@@ -527,7 +527,7 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
       .map(doc => doc.id.trim())
       .filter(Boolean);
 
-    const delniciString = delnici.join(", "); // ✅ EnumList jako řetězec (správně)
+    const delniciString = delnici.join(","); // ✅ EnumList jako řetězec (správně)
 
     console.log("✅ Odesílám AppSheet Dělníci:", delniciString);
 
