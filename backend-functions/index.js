@@ -405,7 +405,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
             predane: predane === true || predane === "true",
             odeslane: odeslane === true || odeslane === "true",
             SECURITY_filter: securityArray,
-            uzivatele: uzivateleArray
+            uzivatele
         }
     };
 
