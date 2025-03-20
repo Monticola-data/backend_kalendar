@@ -302,7 +302,8 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         odeslane,
         zakaznik,
         cinnost,
-        SECURITY_filter
+        SECURITY_filter,
+        uzivatele
     } = req.body;
 
     const firestore = admin.firestore();
@@ -403,7 +404,8 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
             hotove: hotove === true || hotove === "true",
             predane: predane === true || predane === "true",
             odeslane: odeslane === true || odeslane === "true",
-            SECURITY_filter: securityArray
+            SECURITY_filter: securityArray,
+            uzivatele: uzivateleArray
         }
     };
 
