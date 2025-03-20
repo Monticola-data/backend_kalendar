@@ -565,6 +565,3 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
       .send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
   }
 });
-
-});
-
