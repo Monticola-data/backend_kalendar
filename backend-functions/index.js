@@ -524,16 +524,18 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
     }
 
     const delnici = uzivateleSnapshot.docs
-      .map(doc => doc.id.trim()) // zde jsou klíče správně, jak máš uvedeno
+      .map(doc => doc.id.trim())
       .filter(Boolean);
 
-    console.log("✅ Nalezení dělníci (správné ID):", delnici);
+    const delniciString = delnici.join(", "); // ✅ EnumList jako řetězec (správně)
+
+    console.log("✅ Odesílám AppSheet Dělníci:", delniciString);
 
     const rowUpdate = {
       "Row ID": eventId,
       Datum: start,
       Parta: party,
-      "Dělníci": delnici  // ✅ musí být čisté pole klíčů bez úprav!
+      "Dělníci": delniciString
     };
 
     if (typeof cas !== "undefined") {
