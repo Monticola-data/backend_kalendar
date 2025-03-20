@@ -507,14 +507,21 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
   }
 
   try {
+    const firestore = admin.firestore();
+
+    // ✅ Vyhledej uživatele podle party
+    const uzivateleSnapshot = await firestore.collection("uzivatele").where("parta", "==", party).get();
+    const delnici = uzivateleSnapshot.docs.map(doc => doc.id);
+
     const rowUpdate = {
       "Row ID": eventId,
       Datum: start,
-      Parta: party
+      Parta: party,
+      "Dělníci": delnici.join(", ")  // ✅ přidání dělníků
     };
 
     if (typeof cas !== 'undefined') {
-      rowUpdate["Čas"] = cas;  // ✅ nastav jen pokud je posláno
+      rowUpdate["Čas"] = cas;
     }
 
     const response = await axios.post(
@@ -539,4 +546,5 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
     return res.status(500).send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
   }
 });
+
 
