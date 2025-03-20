@@ -509,26 +509,29 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
   try {
     const firestore = admin.firestore();
 
-const uzivateleSnapshot = await firestore.collection("uzivatele").where("parta", "==", party).get();
+    const uzivateleSnapshot = await firestore
+      .collection("uzivatele")
+      .where("parta", "==", party)
+      .get();
 
-if (uzivateleSnapshot.empty) {
-  console.warn("⚠️ Žádní uživatelé nalezeni pro partu:", party);
-}
+    if (uzivateleSnapshot.empty) {
+      console.warn("⚠️ Žádní uživatelé nalezeni pro partu:", party);
+    }
 
-const delnici = uzivateleSnapshot.docs
-  .map(doc => doc.id.trim())    // ✅ odstraní případné mezery navíc
-  .filter(Boolean);             // ✅ odstraní prázdné řetězce, pokud existují
+    const delnici = uzivateleSnapshot.docs
+      .map((doc) => doc.id.trim()) // ✅ odstraní případné mezery navíc
+      .filter(Boolean); // ✅ odstraní prázdné řetězce, pokud existují
 
-console.log("✅ Nalezení dělníci:", delnici);
+    console.log("✅ Nalezení dělníci:", delnici);
 
     const rowUpdate = {
       "Row ID": eventId,
       Datum: start,
       Parta: party,
-      "Dělníci": delnici.join(", ") // správně formátováno
+      "Dělníci": delnici // ✅ předáváme přímo pole (Array)
     };
 
-    if (typeof cas !== 'undefined') {
+    if (typeof cas !== "undefined") {
       rowUpdate["Čas"] = cas;
     }
 
@@ -536,21 +539,22 @@ console.log("✅ Nalezení dělníci:", delnici);
       `https://api.appsheet.com/api/v2/apps/${config.APPSHEET_APP_ID}/tables/Zadání/Action`,
       {
         Action: "Edit",
-        Rows: [rowUpdate]
+        Rows: [rowUpdate],
       },
       {
         headers: {
-          "ApplicationAccessKey": config.APPSHEET_API_KEY,
-          "Content-Type": "application/json"
-        }
+          ApplicationAccessKey: config.APPSHEET_API_KEY,
+          "Content-Type": "application/json",
+        },
       }
     );
 
     console.log("✅ Data úspěšně aktualizována v AppSheet", response.data);
     return res.status(200).send("Data úspěšně aktualizována v AppSheet");
-
   } catch (error) {
     console.error("❌ Chyba při aktualizaci AppSheet:", error.response?.data || error.message);
-    return res.status(500).send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
+    return res
+      .status(500)
+      .send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
   }
 });
