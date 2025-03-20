@@ -475,17 +475,33 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
     return res.status(400).send("Chybí eventId");
   }
 
+  const firestore = admin.firestore();
+
   try {
+    // Získání emailu podle party z Firestore
+    let partyEmail = "";
+    if (party) {
+      const partyDoc = await firestore.collection("parties").doc(party).get();
+      if (partyDoc.exists && partyDoc.data().email) {
+        partyEmail = partyDoc.data().email;
+      } else {
+        console.warn("⚠️ Pro partu nebyl nalezen žádný email:", party);
+      }
+    }
+
+    // Příprava dat pro AppSheet
     const rowUpdate = {
       "Row ID": eventId,
       Datum: start,
-      Parta: party
+      Parta: party,
+      "USEREMAIL_dělníci": partyEmail
     };
 
     if (typeof cas !== 'undefined') {
-      rowUpdate["Čas"] = cas;  // ✅ nastav jen pokud je posláno
+      rowUpdate["Čas"] = cas;
     }
 
+    // Odeslání do AppSheet
     const response = await axios.post(
       `https://api.appsheet.com/api/v2/apps/${config.APPSHEET_APP_ID}/tables/Zadání/Action`,
       {
