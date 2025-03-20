@@ -509,15 +509,23 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
   try {
     const firestore = admin.firestore();
 
-    // ✅ Vyhledej uživatele podle party
+    // Načti uživatele z Firestore podle party (správně s await)
     const uzivateleSnapshot = await firestore.collection("uzivatele").where("parta", "==", party).get();
+
+    if (uzivateleSnapshot.empty) {
+      console.warn("⚠️ Žádní uživatelé nalezeni pro partu:", party);
+    }
+
+    // Zde je mapování, které se provede až PO načtení dat
     const delnici = uzivateleSnapshot.docs.map(doc => doc.id);
+
+    console.log("✅ Nalezení dělníci:", delnici);
 
     const rowUpdate = {
       "Row ID": eventId,
       Datum: start,
       Parta: party,
-      "Dělníci": delnici.join(", ")
+      "Dělníci": delnici.join(", ") // správně formátováno
     };
 
     if (typeof cas !== 'undefined') {
@@ -546,5 +554,3 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
     return res.status(500).send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
   }
 });
-
-
