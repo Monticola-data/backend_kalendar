@@ -365,6 +365,14 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
         securityArray = SECURITY_filter;
     }
 
+    let uzivateleArray = [];
+    if (typeof req.body.uzivatele === "string") {
+        uzivateleArray = req.body.uzivatele.split(",").map(id => id.trim());
+    } else if (Array.isArray(req.body.uzivatele)) {
+        uzivateleArray = req.body.uzivatele;
+    }
+
+
     let partyColor = "#000000";
     try {
         const partyDoc = await firestore.collection("parties").doc(party).get();
@@ -405,7 +413,7 @@ exports.updateFirestoreEvent = onRequest(async (req, res) => {
             predane: predane === true || predane === "true",
             odeslane: odeslane === true || odeslane === "true",
             SECURITY_filter: securityArray,
-            uzivatele
+            uzivatele:uzivateleArray
         }
     };
 
