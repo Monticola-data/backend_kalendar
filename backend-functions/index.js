@@ -524,16 +524,18 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
     }
 
     const delnici = uzivateleSnapshot.docs
-      .map((doc) => doc.id.trim())
+      .map(doc => doc.id.trim())
       .filter(Boolean);
 
-    console.log("✅ Nalezení dělníci:", delnici);
+    const delniciString = delnici.join(" , ");  // ✅ Formát přesně: hodnota1 , hodnota2
+
+    console.log("✅ Nalezení dělníci (správný formát):", delniciString);
 
     const rowUpdate = {
       "Row ID": eventId,
       Datum: start,
       Parta: party,
-      "Dělníci": delnici
+      "Dělníci": delniciString
     };
 
     if (typeof cas !== "undefined") {
@@ -563,3 +565,6 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
       .send("Chyba při aktualizaci AppSheet: " + (error.response?.data || error.message));
   }
 });
+
+});
+
