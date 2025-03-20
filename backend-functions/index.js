@@ -506,6 +506,11 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
     return res.status(400).send("Chybí eventId");
   }
 
+  if (!party) {
+    console.error("❌ Chybí hodnota party!");
+    return res.status(400).send("Chybí hodnota party");
+  }
+
   try {
     const firestore = admin.firestore();
 
@@ -519,8 +524,8 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
     }
 
     const delnici = uzivateleSnapshot.docs
-      .map((doc) => doc.id.trim()) // ✅ odstraní případné mezery navíc
-      .filter(Boolean); // ✅ odstraní prázdné řetězce, pokud existují
+      .map((doc) => doc.id.trim())
+      .filter(Boolean);
 
     console.log("✅ Nalezení dělníci:", delnici);
 
@@ -528,7 +533,7 @@ exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
       "Row ID": eventId,
       Datum: start,
       Parta: party,
-      "Dělníci": delnici // ✅ předáváme přímo pole (Array)
+      "Dělníci": delnici
     };
 
     if (typeof cas !== "undefined") {
