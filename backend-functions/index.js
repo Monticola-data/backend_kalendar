@@ -460,6 +460,48 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
     }
 });
 
+exports.updateFirestoreOmluvenky = onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") return res.status(204).send("");
+
+    const {
+        omluvenkyId,
+        title,
+        start,
+        end,
+        popis,
+        hex
+    } = req.body;
+
+    if (!omluvenkyId) {
+        console.error("❌ Chybí omluvenkyId!");
+        return res.status(400).send("Chybí omluvenkyId");
+    }
+
+    const firestore = admin.firestore();
+
+    const omluvenkyData = {
+        omluvenkyId,
+        title,
+        start,
+        end,
+        popis,
+        hex
+    };
+
+    try {
+        await firestore.collection("omluvenky").doc(omluvenkyId).set(omluvenkyData, { merge: true });
+        console.log("✅ Omluvenky úspěšně aktualizovány:", omluvenkyId);
+        return res.status(200).send("Omluvenky úspěšně aktualizovány ve Firestore");
+    } catch (error) {
+        console.error("❌ Chyba při ukládání party do Firestore:", error);
+        return res.status(500).send("Chyba při ukládání omluvenky do Firestore: " + error.message);
+    }
+});
+
 
 exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
