@@ -469,7 +469,7 @@ exports.updateFirestoreOmluvenky = onRequest(async (req, res) => {
 
     if (req.method === "OPTIONS") return res.status(204).send("");
 
-    const { omluvenkyId, title, start, end, popis, hex, stredisko, action } = req.body;
+    const { omluvenkyId, title, start, end, popis, hex, stredisko, typ, parta, action } = req.body;
 
     if (!omluvenkyId) {
         console.error("❌ Chybí omluvenkyId!");
@@ -490,7 +490,7 @@ exports.updateFirestoreOmluvenky = onRequest(async (req, res) => {
         }
     }
 
-    const omluvenkyData = { omluvenkyId, title, start, end, popis, hex, stredisko };
+    const omluvenkyData = { omluvenkyId, title, start, end, popis, hex, stredisko, typ, parta };
 
     try {
         await omluvenkyRef.set(omluvenkyData, { merge: true });
