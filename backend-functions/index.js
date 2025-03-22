@@ -428,13 +428,7 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
 
     if (req.method === "OPTIONS") return res.status(204).send("");
 
-    const {
-        partyId,
-        name,
-        color,
-        stredisko,
-        email
-    } = req.body;
+    const { partyId, name, color, stredisko, email, action } = req.body;
 
     if (!partyId) {
         console.error("❌ Chybí partyId!");
@@ -442,16 +436,23 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
     }
 
     const firestore = admin.firestore();
+    const partyRef = firestore.collection("parties").doc(partyId);
 
-    const partyData = {
-        name,
-        color,
-        stredisko,
-        email
-    };
+    if (action === "delete") {
+        try {
+            await partyRef.delete();
+            console.log(`🗑️ Party ${partyId} smazána z Firestore.`);
+            return res.status(200).send(`Party ${partyId} smazána.`);
+        } catch (error) {
+            console.error("❌ Chyba při mazání party:", error);
+            return res.status(500).send("Chyba při mazání: " + error.message);
+        }
+    }
+
+    const partyData = { name, color, stredisko, email };
 
     try {
-        await firestore.collection("parties").doc(partyId).set(partyData, { merge: true });
+        await partyRef.set(partyData, { merge: true });
         console.log("✅ Party úspěšně aktualizována:", partyId);
         return res.status(200).send("Party úspěšně aktualizována ve Firestore");
     } catch (error) {
@@ -460,6 +461,7 @@ exports.updateFirestoreParty = onRequest(async (req, res) => {
     }
 });
 
+
 exports.updateFirestoreOmluvenky = onRequest(async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -467,14 +469,7 @@ exports.updateFirestoreOmluvenky = onRequest(async (req, res) => {
 
     if (req.method === "OPTIONS") return res.status(204).send("");
 
-    const {
-        omluvenkyId,
-        title,
-        start,
-        end,
-        popis,
-        hex
-    } = req.body;
+    const { omluvenkyId, title, start, end, popis, hex, action } = req.body;
 
     if (!omluvenkyId) {
         console.error("❌ Chybí omluvenkyId!");
@@ -482,25 +477,31 @@ exports.updateFirestoreOmluvenky = onRequest(async (req, res) => {
     }
 
     const firestore = admin.firestore();
+    const omluvenkyRef = firestore.collection("omluvenky").doc(omluvenkyId);
 
-    const omluvenkyData = {
-        omluvenkyId,
-        title,
-        start,
-        end,
-        popis,
-        hex
-    };
+    if (action === "delete") {
+        try {
+            await omluvenkyRef.delete();
+            console.log(`🗑️ Omluvenka ${omluvenkyId} smazána z Firestore.`);
+            return res.status(200).send(`Omluvenka ${omluvenkyId} smazána.`);
+        } catch (error) {
+            console.error("❌ Chyba při mazání omluvenky:", error);
+            return res.status(500).send("Chyba při mazání: " + error.message);
+        }
+    }
+
+    const omluvenkyData = { omluvenkyId, title, start, end, popis, hex };
 
     try {
-        await firestore.collection("omluvenky").doc(omluvenkyId).set(omluvenkyData, { merge: true });
-        console.log("✅ Omluvenky úspěšně aktualizovány:", omluvenkyId);
-        return res.status(200).send("Omluvenky úspěšně aktualizovány ve Firestore");
+        await omluvenkyRef.set(omluvenkyData, { merge: true });
+        console.log("✅ Omluvenka úspěšně aktualizována:", omluvenkyId);
+        return res.status(200).send("Omluvenka úspěšně aktualizována ve Firestore");
     } catch (error) {
-        console.error("❌ Chyba při ukládání party do Firestore:", error);
+        console.error("❌ Chyba při ukládání omluvenky do Firestore:", error);
         return res.status(500).send("Chyba při ukládání omluvenky do Firestore: " + error.message);
     }
 });
+
 
 
 exports.updateAppSheetFromFirestore = onRequest(async (req, res) => {
